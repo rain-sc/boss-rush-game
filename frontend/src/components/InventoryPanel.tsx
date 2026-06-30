@@ -12,8 +12,17 @@ export default function InventoryPanel({ items, onClose }: { items: InvItem[]; o
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {items.map((it) => (
-              <li key={it.itemId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                <span>{itemName(it.itemId)}</span>
+              <li key={it.itemId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img
+                    src={`/assets/items/${it.itemId}.png`}
+                    alt=""
+                    width={22}
+                    height={22}
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  {itemName(it.itemId)}
+                </span>
                 <span style={{ fontWeight: 700 }}>×{it.qty}</span>
               </li>
             ))}

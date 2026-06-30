@@ -182,6 +182,47 @@ const allJobs = [
       text_guidance_scale: 7.0,
     },
   },
+
+  // --- Phase 4 batch: hub facility sprites + life item icons ---
+  ...[
+    ["hub_tree", "hub/tree.png", "a lush green tree", 48],
+    ["hub_rock", "hub/rock.png", "a grey rock boulder with shiny ore veins", 48],
+    ["hub_pond", "hub/pond.png", "a small round pond of blue water with a grassy rim", 64],
+    ["hub_farm", "hub/farm_plot.png", "a patch of tilled brown farm soil with rows", 48],
+    ["hub_portal", "hub/portal.png", "a glowing blue magic portal gateway", 56],
+  ].map(([name, path, desc, size]) => ({
+    name,
+    outPath: `../frontend/public/assets/${path}`,
+    body: {
+      description: `${desc}, ${STYLE}`,
+      image_size: { width: size, height: size },
+      view: "high top-down",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  })),
+  ...[
+    ["item_wood", "items/wood.png", "a small stack of cut wood logs"],
+    ["item_ore", "items/ore.png", "a chunk of grey ore with blue crystals"],
+    ["item_herb", "items/herb.png", "a green medicinal herb leaf"],
+    ["item_fish", "items/fish.png", "a single blue fish"],
+    ["item_carrot", "items/carrot.png", "an orange carrot with green top"],
+  ].map(([name, path, desc]) => ({
+    name,
+    outPath: `../frontend/public/assets/${path}`,
+    body: {
+      description: `a game item icon of ${desc}, ${STYLE}`,
+      image_size: { width: 32, height: 32 },
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  })),
 ];
 
 // Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.

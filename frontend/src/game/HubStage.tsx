@@ -1,16 +1,16 @@
 import { useEffect, useRef } from 'react'
-import { Application, Assets, Container, Graphics, Sprite, Text, TilingSprite } from 'pixi.js'
+import { Application, Assets, Container, Sprite, Text, TilingSprite, type Texture } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, PLAYER_SIZE, PLAYER_HIT_RADIUS } from './config'
 import { initKeyboard, getDirection, consumeInteract } from './input'
 
-type Facility = { id: string; label: string; x: number; y: number; color: number; gather: boolean }
+type Facility = { id: string; label: string; x: number; y: number; tex: string; size: number; gather: boolean }
 
 const FACILITIES: Facility[] = [
-  { id: 'tree', label: '採集樹(木)', x: 120, y: 60, color: 0x1b5e20, gather: true },
-  { id: 'rock', label: '礦點(礦)', x: 380, y: 64, color: 0x9e9e9e, gather: true },
-  { id: 'farm', label: '農田', x: 90, y: 180, color: 0x8d6e63, gather: false },
-  { id: 'pond', label: '池塘(魚)', x: 400, y: 200, color: 0x4aa3df, gather: true },
-  { id: 'portal', label: '傳送門 ▶ 出發', x: 240, y: 235, color: 0x9b59b6, gather: false },
+  { id: 'tree', label: '採集樹(木)', x: 120, y: 60, tex: 'tree.png', size: 36, gather: true },
+  { id: 'rock', label: '礦點(礦)', x: 380, y: 64, tex: 'rock.png', size: 34, gather: true },
+  { id: 'farm', label: '農田', x: 90, y: 180, tex: 'farm_plot.png', size: 42, gather: false },
+  { id: 'pond', label: '池塘(魚)', x: 400, y: 200, tex: 'pond.png', size: 46, gather: true },
+  { id: 'portal', label: '傳送門 ▶ 出發', x: 240, y: 235, tex: 'portal.png', size: 46, gather: false },
 ]
 
 const INTERACT_RANGE = 30
@@ -55,21 +55,29 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
       const ground = new TilingSprite({ texture: groundTex, width: LOGICAL_W, height: LOGICAL_H })
       world.addChild(ground)
 
-      // Facility markers (placeholder rectangles + labels).
-      const markers: Record<string, Graphics> = {}
+      // Facility sprites + labels.
+      const hubTex: Record<string, Texture> = {}
+      await Promise.all(
+        FACILITIES.map(async (f) => {
+          const t = await Assets.load(`/assets/hub/${f.tex}`)
+          t.source.scaleMode = 'nearest'
+          hubTex[f.id] = t
+        }),
+      )
+      const markers: Record<string, Sprite> = {}
       for (const f of FACILITIES) {
-        const g = new Graphics()
-        g.roundRect(-16, -16, 32, 32, 5).fill(f.color)
-        g.roundRect(-16, -16, 32, 32, 5).stroke({ color: 0x000000, width: 1, alpha: 0.5 })
-        g.position.set(f.x, f.y)
-        world.addChild(g)
-        markers[f.id] = g
+        const spr = new Sprite(hubTex[f.id])
+        spr.anchor.set(0.5)
+        spr.setSize(f.size, f.size)
+        spr.position.set(f.x, f.y)
+        world.addChild(spr)
+        markers[f.id] = spr
         const label = new Text({
           text: f.label,
           style: { fill: 0xffffff, fontSize: 9, fontFamily: 'sans-serif', stroke: { color: 0x000000, width: 3 } },
         })
         label.anchor.set(0.5)
-        label.position.set(f.x, f.y - 24)
+        label.position.set(f.x, f.y - f.size / 2 - 8)
         world.addChild(label)
       }
 
