@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: bossrush-db
+    environment:
+      POSTGRES_DB: bossrush
+      POSTGRES_USER: bossrush
+      POSTGRES_PASSWORD: bossrush
+    ports:
+      # host 5433 -> container 5432 (host 5432 is taken by another Postgres)
+      - "5433:5432"
+    volumes:
+      - bossrush-pgdata:/var/lib/postgresql/data
+
+volumes:
+  bossrush-pgdata:

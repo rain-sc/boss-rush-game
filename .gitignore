@@ -1,0 +1,18 @@
+# Node / frontend
+node_modules/
+dist/
+*.local
+
+# Java / backend
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Env / secrets
+.env
+*.env
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.log
