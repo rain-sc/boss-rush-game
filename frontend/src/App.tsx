@@ -20,6 +20,8 @@ function App() {
       >
         Phase 1 — WASD / 方向鍵 或 左下搖桿 移動
       </div>
+
+      <div className="rotate-notice">🔄 請將手機旋轉為橫向以獲得最佳體驗</div>
     </>
   )
 }

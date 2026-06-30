@@ -49,12 +49,11 @@ export default function CanvasStage() {
       player.position.set(LOGICAL_W / 2, LOGICAL_H / 2)
       world.addChild(player)
 
-      // Scale + center (letterbox) the world to fit the screen.
-      // Integer scale when the field fits (crisp pixels); otherwise fit exactly
-      // so the whole 480x270 field stays visible on small / portrait screens.
+      // Fit-scale + center (letterbox) the world: fill as much of the screen as
+      // possible while keeping the 16:9 aspect and the whole field visible.
+      // (On a 16:9 fullscreen this lands on an exact integer multiple anyway.)
       const layout = () => {
-        const raw = Math.min(pixi.screen.width / LOGICAL_W, pixi.screen.height / LOGICAL_H)
-        const scale = raw >= 1 ? Math.floor(raw) : raw
+        const scale = Math.min(pixi.screen.width / LOGICAL_W, pixi.screen.height / LOGICAL_H)
         world.scale.set(scale)
         world.position.set(
           Math.floor((pixi.screen.width - LOGICAL_W * scale) / 2),

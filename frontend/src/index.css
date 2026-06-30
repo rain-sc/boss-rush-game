@@ -17,3 +17,23 @@ canvas {
   display: block;
   image-rendering: pixelated;
 }
+
+/* Landscape-designed game: ask touch users to rotate when in portrait. */
+.rotate-notice {
+  display: none;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-notice {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    background: #000;
+    color: #fff;
+    font: 16px/1.5 sans-serif;
+  }
+}
