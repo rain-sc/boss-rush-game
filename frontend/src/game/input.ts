@@ -17,6 +17,17 @@ export function consumeDodge(): boolean {
   return v
 }
 
+// One-shot interact request (keyboard E or touch button), used in the hub.
+let interactQueued = false
+export function requestInteract(): void {
+  interactQueued = true
+}
+export function consumeInteract(): boolean {
+  const v = interactQueued
+  interactQueued = false
+  return v
+}
+
 export function initKeyboard(): () => void {
   const down = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase()
@@ -24,6 +35,7 @@ export function initKeyboard(): () => void {
       requestDodge()
       e.preventDefault()
     }
+    if (k === 'e') requestInteract()
     keys.add(k)
   }
   const up = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase())

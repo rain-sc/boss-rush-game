@@ -10,7 +10,7 @@ import { loadRun, saveRun } from '../api'
 type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
 const MAP_ID = 1
 
-export default function CanvasStage() {
+export default function CanvasStage({ onExit }: { onExit?: () => void }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<Phase>('loading')
   const [level, setLevel] = useState(1)
@@ -231,9 +231,16 @@ export default function CanvasStage() {
             <div style={{ color: '#fff', marginTop: 8 }}>
               {phase === 'won' ? '恭喜打完地圖 1 全 20 關' : `止步於第 ${level} 關`}
             </div>
-            <button onClick={() => restartRef.current()} style={btn}>
-              重新挑戰
-            </button>
+            <div>
+              <button onClick={() => restartRef.current()} style={btn}>
+                重新挑戰
+              </button>
+              {onExit && (
+                <button onClick={onExit} style={{ ...btn, marginLeft: 12, background: '#ddd' }}>
+                  回家園
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
