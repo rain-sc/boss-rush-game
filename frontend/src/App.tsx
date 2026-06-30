@@ -22,7 +22,7 @@ function App() {
           pointerEvents: 'none',
         }}
       >
-        Phase 2 — 移動:WASD / 搖桿　閃避:空白鍵 / 閃避鈕　技能自動施放
+        Phase 3 — 20 關 + Boss + 過關抽選 + 進度存檔　移動:WASD/搖桿　閃避:空白鍵/鈕
       </div>
 
       <div className="rotate-notice">🔄 請將手機旋轉為橫向以獲得最佳體驗</div>

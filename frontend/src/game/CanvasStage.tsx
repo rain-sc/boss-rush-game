@@ -1,24 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Application, Assets, Container, Graphics, Text } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H } from './config'
 import { initKeyboard } from './input'
-import { CombatScene, type CombatState } from './combat/CombatScene'
+import { CombatScene } from './combat/CombatScene'
+import { emptyBuild, draftThree, type SkillCard } from './build'
+import { getLevelConfig, TOTAL_LEVELS } from './levels'
+import { loadRun, saveRun } from '../api'
 
-/**
- * Pixi.js stage. Anchored to a fixed logical height with the width filling the
- * viewport (no side bars). Hosts the Phase 2 combat scene + a screen-space HUD,
- * and shows a win/lose overlay with a restart button.
- */
+type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
+const MAP_ID = 1
+
 export default function CanvasStage() {
   const hostRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<CombatScene | null>(null)
-  const [result, setResult] = useState<CombatState | null>(null)
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [level, setLevel] = useState(1)
+  const [cards, setCards] = useState<SkillCard[]>([])
+  const pickRef = useRef<(c: SkillCard) => void>(() => {})
+  const restartRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     let app: Application | null = null
     let destroyed = false
     let detachLayout: (() => void) | null = null
     const detachKeys = initKeyboard()
+
+    const phaseRef = { current: 'loading' as Phase }
+    const levelRef = { current: 1 }
+    let buildRef = emptyBuild()
 
     ;(async () => {
       const pixi = new Application()
@@ -30,10 +38,8 @@ export default function CanvasStage() {
       app = pixi
       hostRef.current?.appendChild(pixi.canvas)
 
-      // World (scaled, dynamic-width fill).
       const world = new Container()
       pixi.stage.addChild(world)
-
       const bounds = { w: LOGICAL_W }
       const field = new Graphics()
       world.addChild(field)
@@ -44,7 +50,6 @@ export default function CanvasStage() {
         for (let y = 0; y <= LOGICAL_H; y += 16) field.moveTo(0, y).lineTo(w, y)
         field.stroke({ color: 0x000000, alpha: 0.08, width: 1 })
       }
-
       const layout = () => {
         const scale = pixi.screen.height / LOGICAL_H
         world.scale.set(scale)
@@ -61,36 +66,82 @@ export default function CanvasStage() {
         window.removeEventListener('orientationchange', onOrient)
       }
 
-      // Load sprites and force nearest-neighbour sampling for crisp pixels.
       const [playerTex, slimeTex, goblinTex, fireballTex] = await Promise.all([
         Assets.load('/assets/characters/player/male/idle.png'),
         Assets.load('/assets/enemies/slime/idle.png'),
         Assets.load('/assets/enemies/goblin/idle.png'),
         Assets.load('/assets/skills/projectiles/fireball.png'),
       ])
-      for (const t of [playerTex, slimeTex, goblinTex, fireballTex]) {
-        t.source.scaleMode = 'nearest'
+      for (const t of [playerTex, slimeTex, goblinTex, fireballTex]) t.source.scaleMode = 'nearest'
+
+      let scene: CombatScene
+
+      const saveCurrent = (status: string) =>
+        saveRun({
+          mapId: MAP_ID,
+          currentLevel: levelRef.current,
+          hp: Math.ceil(scene.playerHp),
+          status,
+          build: JSON.stringify(buildRef),
+        })
+
+      const beginLevel = (lvl: number) => {
+        levelRef.current = lvl
+        setLevel(lvl)
+        scene.startLevel(getLevelConfig(lvl), buildRef)
+        phaseRef.current = 'combat'
+        setPhase('combat')
       }
 
-      const scene = new CombatScene({
-        world,
-        textures: { player: playerTex, enemies: [slimeTex, goblinTex], fireball: fireballTex },
-        getW: () => bounds.w,
-        onEnd: (s) => setResult(s),
-      })
-      sceneRef.current = scene
+      const handleCleared = () => {
+        if (levelRef.current >= TOTAL_LEVELS) {
+          phaseRef.current = 'won'
+          setPhase('won')
+          saveCurrent('WON')
+        } else {
+          setCards(draftThree())
+          phaseRef.current = 'draft'
+          setPhase('draft')
+          saveCurrent('PLAYING')
+        }
+      }
 
-      // Screen-space HUD.
+      const handleDied = () => {
+        phaseRef.current = 'lost'
+        setPhase('lost')
+        saveCurrent('LOST')
+      }
+
+      const pickCard = (c: SkillCard) => {
+        buildRef = { ...buildRef, [c.id]: buildRef[c.id] + 1 }
+        beginLevel(levelRef.current + 1)
+        saveCurrent('PLAYING')
+      }
+
+      const restartRun = () => {
+        buildRef = emptyBuild()
+        beginLevel(1)
+        saveCurrent('PLAYING')
+      }
+
+      pickRef.current = pickCard
+      restartRef.current = restartRun
+
+      scene = new CombatScene({
+        world,
+        textures: { player: playerTex, enemies: [slimeTex, goblinTex], fireball: fireballTex, boss: goblinTex },
+        getW: () => bounds.w,
+        onCleared: handleCleared,
+        onDied: handleDied,
+      })
+
+      // HUD (screen space)
       const hud = new Container()
       pixi.stage.addChild(hud)
       const hpBg = new Graphics()
       const hpFill = new Graphics()
-      const info = new Text({
-        text: '',
-        style: { fill: 0xffffff, fontSize: 13, fontFamily: 'sans-serif' },
-      })
+      const info = new Text({ text: '', style: { fill: 0xffffff, fontSize: 13, fontFamily: 'sans-serif' } })
       hud.addChild(hpBg, hpFill, info)
-
       const drawHud = () => {
         const x = 12
         const y = 12
@@ -102,65 +153,101 @@ export default function CanvasStage() {
         hpFill.clear()
         if (frac > 0) hpFill.roundRect(x + 2, y + 2, (w - 4) * frac, h - 4, 2).fill(0xe74c3c)
         info.position.set(x, y + h + 4)
-        info.text = `HP ${Math.ceil(scene.playerHp)}/${scene.playerMaxHp}    敵人剩餘 ${scene.enemyCount}`
+        const lvl = levelRef.current
+        const boss = lvl % 5 === 0
+        info.text = `HP ${Math.ceil(scene.playerHp)}/${scene.playerMaxHp}    關卡 ${lvl}/${TOTAL_LEVELS}${boss ? ' (BOSS)' : ''}    敵人 ${scene.enemyCount}`
       }
 
       pixi.ticker.add((ticker) => {
         const dt = Math.min(ticker.deltaMS / 1000, 0.05)
-        scene.update(dt)
+        if (phaseRef.current === 'combat') scene.update(dt)
         drawHud()
       })
+
+      // resume saved run or start fresh
+      const saved = await loadRun()
+      if (saved && saved.status === 'PLAYING' && saved.currentLevel >= 1 && saved.currentLevel <= TOTAL_LEVELS) {
+        try {
+          buildRef = { ...emptyBuild(), ...JSON.parse(saved.build) }
+        } catch {
+          buildRef = emptyBuild()
+        }
+        beginLevel(saved.currentLevel)
+      } else {
+        buildRef = emptyBuild()
+        beginLevel(1)
+      }
     })()
 
     return () => {
       destroyed = true
       detachKeys()
       detachLayout?.()
-      sceneRef.current = null
       app?.destroy(true, { children: true })
     }
   }, [])
 
-  const restart = () => {
-    sceneRef.current?.reset()
-    setResult(null)
-  }
-
   return (
     <div ref={hostRef}>
-      {result && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 15,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.55)',
-          }}
-        >
+      {phase === 'draft' && (
+        <div style={overlay}>
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ color: '#fff', fontFamily: 'sans-serif' }}>選擇一項強化(第 {level} 關通過)</h3>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {cards.map((c, i) => (
+                <button key={i} onClick={() => pickRef.current(c)} style={cardStyle}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>{c.name}</div>
+                  <div style={{ fontSize: 13, opacity: 0.8 }}>{c.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(phase === 'won' || phase === 'lost') && (
+        <div style={overlay}>
           <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
-            <h2 style={{ color: result === 'win' ? '#2ecc71' : '#e74c3c', fontSize: 40, margin: 0 }}>
-              {result === 'win' ? '過關!' : '你死了'}
+            <h2 style={{ color: phase === 'won' ? '#2ecc71' : '#e74c3c', fontSize: 40, margin: 0 }}>
+              {phase === 'won' ? '通關!' : '你死了'}
             </h2>
-            <button
-              onClick={restart}
-              style={{
-                marginTop: 16,
-                padding: '10px 22px',
-                fontSize: 16,
-                borderRadius: 8,
-                border: 'none',
-                background: '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              再玩一次
+            <div style={{ color: '#fff', marginTop: 8 }}>
+              {phase === 'won' ? '恭喜打完地圖 1 全 20 關' : `止步於第 ${level} 關`}
+            </div>
+            <button onClick={() => restartRef.current()} style={btn}>
+              重新挑戰
             </button>
           </div>
         </div>
       )}
     </div>
   )
+}
+
+const overlay: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 15,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(0,0,0,0.6)',
+}
+const cardStyle: CSSProperties = {
+  width: 150,
+  padding: '14px 12px',
+  borderRadius: 10,
+  border: 'none',
+  background: '#fff',
+  cursor: 'pointer',
+  textAlign: 'center',
+}
+const btn: CSSProperties = {
+  marginTop: 16,
+  padding: '10px 22px',
+  fontSize: 16,
+  borderRadius: 8,
+  border: 'none',
+  background: '#fff',
+  cursor: 'pointer',
 }
