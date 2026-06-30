@@ -223,6 +223,39 @@ const allJobs = [
       text_guidance_scale: 8.0,
     },
   })),
+
+  // --- Phase 5 batch: potion + equipment icons + workshop house ---
+  ...[
+    ["item_potion_small", "items/potion_small.png", "a small red health potion bottle", 32],
+    ["equip_iron_sword", "equipment/iron_sword.png", "an iron sword", 32],
+    ["equip_leather_armor", "equipment/leather_armor.png", "a brown leather armor chestplate", 32],
+  ].map(([name, path, desc, size]) => ({
+    name,
+    outPath: `../frontend/public/assets/${path}`,
+    body: {
+      description: `a game item icon of ${desc}, ${STYLE}`,
+      image_size: { width: size, height: size },
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  })),
+  {
+    name: "hub_house",
+    outPath: "../frontend/public/assets/hub/house.png",
+    body: {
+      description: `a small cozy wooden workshop house with a roof, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
 ];
 
 // Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.

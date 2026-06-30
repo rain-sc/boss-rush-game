@@ -67,6 +67,8 @@ export class CombatScene {
   private enemies: Enemy[] = []
   private projectiles: Projectile[] = []
   private build: Build = emptyBuild()
+  private equipAttack = 0
+  private equipMaxHp = 0
   private onCleared?: () => void
   private onDied?: () => void
 
@@ -91,11 +93,23 @@ export class CombatScene {
   }
 
   get playerMaxHp(): number {
-    return PLAYER_MAX_HP + this.build.hp * 20
+    return PLAYER_MAX_HP + this.build.hp * 20 + this.equipMaxHp
   }
 
   get enemyCount(): number {
     return this.enemies.length
+  }
+
+  /** Equipment stats aggregated by the backend, applied to the player. */
+  setEquip(attack: number, maxHp: number): void {
+    this.equipAttack = attack
+    this.equipMaxHp = maxHp
+  }
+
+  /** Heal the player (used by potions); capped at max HP. */
+  healPlayer(amount: number): void {
+    if (this.state !== 'playing') return
+    this.playerHp = Math.min(this.playerMaxHp, this.playerHp + amount)
   }
 
   /** Set up a level: apply the build, full-heal, spawn the wave or boss. */
@@ -153,7 +167,7 @@ export class CombatScene {
         this.attackCd = Math.max(0.2, FIREBALL_CD * Math.pow(0.85, this.build.cdr))
         const base = Math.atan2(target.y - this.py, target.x - this.px)
         const shots = 1 + this.build.multishot
-        const dmg = FIREBALL_DAMAGE + this.build.dmg * 6
+        const dmg = FIREBALL_DAMAGE + this.build.dmg * 6 + this.equipAttack
         for (let i = 0; i < shots; i++) {
           const ang = base + (i - (shots - 1) / 2) * 0.18
           const spr = new Sprite(this.tex.fireball)

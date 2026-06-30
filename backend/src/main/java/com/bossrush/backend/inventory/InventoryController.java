@@ -29,5 +29,12 @@ public class InventoryController {
         return service.add(playerId, req.itemId(), req.qty() == null ? 1 : req.qty());
     }
 
+    @PostMapping("/use")
+    public UseResult use(@RequestParam(defaultValue = "1") Long playerId, @RequestBody UseRequest req) {
+        return new UseResult(service.useOne(playerId, req.itemId()));
+    }
+
     public record AddRequest(String itemId, Integer qty) {}
+    public record UseRequest(String itemId) {}
+    public record UseResult(boolean ok) {}
 }

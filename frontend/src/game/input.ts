@@ -28,6 +28,17 @@ export function consumeInteract(): boolean {
   return v
 }
 
+// One-shot potion request (keyboard Q or touch button), used in combat.
+let potionQueued = false
+export function requestPotion(): void {
+  potionQueued = true
+}
+export function consumePotion(): boolean {
+  const v = potionQueued
+  potionQueued = false
+  return v
+}
+
 export function initKeyboard(): () => void {
   const down = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase()
@@ -36,6 +47,7 @@ export function initKeyboard(): () => void {
       e.preventDefault()
     }
     if (k === 'e') requestInteract()
+    if (k === 'q') requestPotion()
     keys.add(k)
   }
   const up = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase())

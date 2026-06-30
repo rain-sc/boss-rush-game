@@ -10,6 +10,7 @@ const FACILITIES: Facility[] = [
   { id: 'rock', label: '礦點(礦)', x: 380, y: 64, tex: 'rock.png', size: 34, gather: true },
   { id: 'farm', label: '農田', x: 90, y: 180, tex: 'farm_plot.png', size: 42, gather: false },
   { id: 'pond', label: '池塘(魚)', x: 400, y: 200, tex: 'pond.png', size: 46, gather: true },
+  { id: 'house', label: '工坊(合成/裝備)', x: 240, y: 120, tex: 'house.png', size: 50, gather: false },
   { id: 'portal', label: '傳送門 ▶ 出發', x: 240, y: 235, tex: 'portal.png', size: 46, gather: false },
 ]
 

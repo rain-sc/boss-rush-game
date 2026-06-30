@@ -35,3 +35,6 @@ export const ENEMY_TOUCH_INTERVAL = 0.8
 
 // One wave clears the level.
 export const WAVE_COUNT = 6
+
+// Healing potion restores this much HP when used in combat.
+export const POTION_HEAL = 40

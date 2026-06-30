@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Application, Assets, Container, Graphics, Text, TilingSprite } from 'pixi.js'
-import { LOGICAL_W, LOGICAL_H } from './config'
-import { initKeyboard } from './input'
+import { LOGICAL_W, LOGICAL_H, POTION_HEAL } from './config'
+import { initKeyboard, consumePotion } from './input'
 import { CombatScene } from './combat/CombatScene'
 import { emptyBuild, draftThree, type SkillCard } from './build'
 import { getLevelConfig, TOTAL_LEVELS } from './levels'
-import { loadRun, saveRun } from '../api'
+import { loadRun, saveRun, getLoadoutStats, getInventory, useItem } from '../api'
 
 type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
 const MAP_ID = 1
@@ -15,6 +15,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [level, setLevel] = useState(1)
   const [cards, setCards] = useState<SkillCard[]>([])
+  const [potions, setPotions] = useState(0)
   const pickRef = useRef<(c: SkillCard) => void>(() => {})
   const restartRef = useRef<() => void>(() => {})
 
@@ -175,9 +176,31 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         info.text = `HP ${Math.ceil(scene.playerHp)}/${scene.playerMaxHp}    關卡 ${lvl}/${TOTAL_LEVELS}${boss ? ' (BOSS)' : ''}    敵人 ${scene.enemyCount}`
       }
 
+      // Equipment stats (aggregated by backend) + potion count.
+      const refreshPotions = async () => {
+        const inv = await getInventory()
+        setPotions(inv.find((i) => i.itemId === 'potion_small')?.qty ?? 0)
+      }
+      const usePotion = () => {
+        if (phaseRef.current !== 'combat') return
+        useItem('potion_small').then((res) => {
+          if (res.ok) {
+            scene.healPlayer(POTION_HEAL)
+            refreshPotions()
+          }
+        })
+      }
+      const stats = await getLoadoutStats()
+      scene.setEquip(stats.attack, stats.maxHp)
+      refreshPotions()
+
       pixi.ticker.add((ticker) => {
         const dt = Math.min(ticker.deltaMS / 1000, 0.05)
-        if (phaseRef.current === 'combat') scene.update(dt)
+        const wantPotion = consumePotion()
+        if (phaseRef.current === 'combat') {
+          if (wantPotion) usePotion()
+          scene.update(dt)
+        }
         drawHud()
       })
 
@@ -206,6 +229,8 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
 
   return (
     <div ref={hostRef}>
+      {phase === 'combat' && <div style={potionBadge}>🧪 藥水 ×{potions}(Q)</div>}
+
       {phase === 'draft' && (
         <div style={overlay}>
           <div style={{ textAlign: 'center' }}>
@@ -274,4 +299,14 @@ const btn: CSSProperties = {
   border: 'none',
   background: '#fff',
   cursor: 'pointer',
+}
+const potionBadge: CSSProperties = {
+  position: 'fixed',
+  top: 52,
+  left: 12,
+  zIndex: 12,
+  color: '#fff',
+  font: '600 13px sans-serif',
+  textShadow: '0 1px 3px #000',
+  pointerEvents: 'none',
 }

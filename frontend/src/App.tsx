@@ -4,9 +4,11 @@ import HubStage from './game/HubStage'
 import TouchJoystick from './components/TouchJoystick'
 import TouchDodgeButton from './components/TouchDodgeButton'
 import TouchInteractButton from './components/TouchInteractButton'
+import TouchPotionButton from './components/TouchPotionButton'
 import FullscreenButton from './components/FullscreenButton'
 import InventoryPanel from './components/InventoryPanel'
 import FarmPanel from './components/FarmPanel'
+import HousePanel from './components/HousePanel'
 import { getInventory, addItem, type InvItem } from './api'
 
 type Screen = 'hub' | 'run'
@@ -23,6 +25,7 @@ function App() {
   const [toast, setToast] = useState<string | null>(null)
   const [showInv, setShowInv] = useState(false)
   const [showFarm, setShowFarm] = useState(false)
+  const [showHouse, setShowHouse] = useState(false)
   const [inv, setInv] = useState<InvItem[]>([])
 
   const refreshInv = () => getInventory().then(setInv)
@@ -42,6 +45,10 @@ function App() {
     }
     if (id === 'farm') {
       setShowFarm(true)
+      return
+    }
+    if (id === 'house') {
+      setShowHouse(true)
       return
     }
     if (id === 'tree' || id === 'rock' || id === 'pond') {
@@ -67,14 +74,15 @@ function App() {
 
       <TouchJoystick />
       {screen === 'run' && <TouchDodgeButton />}
+      {screen === 'run' && <TouchPotionButton />}
       {screen === 'hub' && <TouchInteractButton />}
       <FullscreenButton />
 
       {/* top bar */}
       <div style={topHint}>
         {screen === 'hub'
-          ? 'Phase 4 — 家園:WASD/搖桿 移動,靠近設施按 E/互動'
-          : 'Phase 4 — 戰鬥:WASD/搖桿 移動,空白鍵/閃避'}
+          ? 'Phase 5 — 家園:移動 WASD/搖桿,設施按 E/互動(工坊可合成/裝備)'
+          : 'Phase 5 — 戰鬥:移動 WASD/搖桿,閃避 空白鍵,藥水 Q'}
       </div>
 
       {screen === 'hub' && (
@@ -99,6 +107,7 @@ function App() {
           }}
         />
       )}
+      {showHouse && <HousePanel items={inv} onClose={() => setShowHouse(false)} onChanged={refreshInv} />}
 
       <div className="rotate-notice">🔄 請將手機旋轉為橫向以獲得最佳體驗</div>
     </>
