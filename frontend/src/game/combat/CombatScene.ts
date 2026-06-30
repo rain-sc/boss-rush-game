@@ -38,6 +38,8 @@ type Enemy = {
   shootEvery: number // 0 = doesn't shoot
   atkCd: number
   flash: number
+  pattern: string // boss attack pattern id
+  castCount: number
 }
 type EnemyShot = { g: Graphics; x: number; y: number; vx: number; vy: number; dmg: number; alive: boolean }
 type Projectile = {
@@ -305,19 +307,42 @@ export class CombatScene {
   }
 
   private fireEnemyShot(e: Enemy): void {
-    const base = Math.atan2(this.py - e.y, this.px - e.x)
     const enraged = e.hp < e.maxHp * 0.5
-    const spread = enraged ? [-0.3, -0.1, 0.1, 0.3] : [-0.2, 0, 0.2]
-    const speed = 115
-    for (const off of spread) {
-      const ang = base + off
-      const g = new Graphics()
-      g.circle(0, 0, 4).fill('#d63031')
-      g.circle(0, 0, 4).stroke({ color: 0x000000, width: 1, alpha: 0.4 })
-      g.position.set(e.x, e.y)
-      this.world.addChild(g)
-      this.enemyShots.push({ g, x: e.x, y: e.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: 10, alive: true })
+    const toPlayer = Math.atan2(this.py - e.y, this.px - e.x)
+    e.castCount += 1
+
+    const fan = (offsets: number[], speed: number) => {
+      for (const o of offsets) this.spawnEnemyBullet(e, toPlayer + o, speed)
     }
+    const ring = (n: number, speed: number) => {
+      for (let i = 0; i < n; i++) this.spawnEnemyBullet(e, (i / n) * Math.PI * 2, speed)
+    }
+
+    switch (e.pattern) {
+      case 'aimed': // goblin chieftain: rapid aimed shots
+        this.spawnEnemyBullet(e, toPlayer, 160)
+        if (enraged) fan([-0.12, 0.12], 160)
+        break
+      case 'radial': // dire bear: ring burst
+        ring(enraged ? 12 : 8, 100)
+        break
+      case 'mixed': // dragon: alternate ring / fan
+        if (e.castCount % 2 === 0) ring(enraged ? 14 : 10, 110)
+        else fan(enraged ? [-0.3, -0.1, 0.1, 0.3] : [-0.2, 0, 0.2], 130)
+        break
+      case 'spread': // orc warlord: aimed fan
+      default:
+        fan(enraged ? [-0.3, -0.1, 0.1, 0.3] : [-0.2, 0, 0.2], 115)
+    }
+  }
+
+  private spawnEnemyBullet(e: Enemy, ang: number, speed: number): void {
+    const g = new Graphics()
+    g.circle(0, 0, 4).fill('#d63031')
+    g.circle(0, 0, 4).stroke({ color: 0x000000, width: 1, alpha: 0.4 })
+    g.position.set(e.x, e.y)
+    this.world.addChild(g)
+    this.enemyShots.push({ g, x: e.x, y: e.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: 10, alive: true })
   }
 
   private updateEnemyShots(dt: number, w: number, ph: number): void {
@@ -472,7 +497,14 @@ export class CombatScene {
     if (config.isBoss) {
       const frames = this.tex.bosses[config.level] ?? this.tex.enemies[0]
       const size = config.level >= 20 ? 88 : 64
-      this.addEnemy(frames, w / 2, size / 2 + 14, config.enemyHp, size, size * 0.4, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2, true, 1.5)
+      const bp: Record<number, { pattern: string; every: number }> = {
+        5: { pattern: 'spread', every: 1.5 },
+        10: { pattern: 'aimed', every: 0.7 },
+        15: { pattern: 'radial', every: 2.0 },
+        20: { pattern: 'mixed', every: 1.1 },
+      }
+      const pc = bp[config.level] ?? { pattern: 'spread', every: 1.5 }
+      this.addEnemy(frames, w / 2, size / 2 + 14, config.enemyHp, size, size * 0.4, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2, true, pc.every, pc.pattern)
       return
     }
     for (let i = 0; i < config.enemyCount; i++) {
@@ -501,6 +533,7 @@ export class CombatScene {
     touchDmg: number,
     isBoss = false,
     shootEvery = 0,
+    pattern = '',
   ): void {
     const spr = new AnimatedSprite(frames)
     spr.anchor.set(0.5)
@@ -513,7 +546,7 @@ export class CombatScene {
     this.world.addChild(bar)
     const e: Enemy = {
       spr, bar, x, y, hp, maxHp: hp, touchCd: 0, radius, speed, touchDmg, size,
-      isBoss, shootEvery, atkCd: shootEvery, flash: 0,
+      isBoss, shootEvery, atkCd: shootEvery, flash: 0, pattern, castCount: 0,
     }
     this.drawEnemyBar(e)
     this.enemies.push(e)
