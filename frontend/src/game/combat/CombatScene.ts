@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, type Texture } from 'pixi.js'
+import { Container, Sprite, type Texture } from 'pixi.js'
 import {
   LOGICAL_H,
   PLAYER_SPEED,
@@ -12,24 +12,32 @@ import {
   FIREBALL_SPEED,
   FIREBALL_DAMAGE,
   FIREBALL_RADIUS,
+  FIREBALL_SIZE,
   ENEMY_SPEED,
   ENEMY_HP,
   ENEMY_RADIUS,
+  ENEMY_SIZE,
   ENEMY_TOUCH_DAMAGE,
   ENEMY_TOUCH_INTERVAL,
   WAVE_COUNT,
 } from '../config'
 import { getDirection, consumeDodge } from '../input'
 
-type Enemy = { g: Graphics; x: number; y: number; hp: number; touchCd: number }
-type Projectile = { g: Graphics; x: number; y: number; vx: number; vy: number; alive: boolean }
+type Enemy = { spr: Sprite; x: number; y: number; hp: number; touchCd: number }
+type Projectile = { spr: Sprite; x: number; y: number; vx: number; vy: number; alive: boolean }
 
 export type CombatState = 'playing' | 'win' | 'lose'
+
+export type CombatTextures = {
+  player: Texture
+  enemies: Texture[]
+  fireball: Texture
+}
 
 /**
  * Phase 2 combat vertical slice: a wave of enemies chase the player; the player
  * auto-fires at the nearest enemy and can dodge (dash + i-frames). Clear the
- * wave to win; reach 0 HP to lose. All visuals are placeholders for now.
+ * wave to win; reach 0 HP to lose.
  */
 export class CombatScene {
   readonly world: Container
@@ -38,6 +46,7 @@ export class CombatScene {
   attackCd = 0
   state: CombatState = 'playing'
 
+  private tex: CombatTextures
   private getW: () => number
   private player: Sprite
   private px = 0
@@ -51,15 +60,16 @@ export class CombatScene {
 
   constructor(opts: {
     world: Container
-    texture: Texture
+    textures: CombatTextures
     getW: () => number
     onEnd?: (s: CombatState) => void
   }) {
     this.world = opts.world
+    this.tex = opts.textures
     this.getW = opts.getW
     this.onEnd = opts.onEnd
 
-    const p = new Sprite(opts.texture)
+    const p = new Sprite(opts.textures.player)
     p.anchor.set(0.5)
     p.setSize(PLAYER_SIZE, PLAYER_SIZE)
     this.player = p
@@ -73,8 +83,8 @@ export class CombatScene {
   }
 
   reset(): void {
-    for (const e of this.enemies) e.g.destroy()
-    for (const pr of this.projectiles) pr.g.destroy()
+    for (const e of this.enemies) e.spr.destroy()
+    for (const pr of this.projectiles) pr.spr.destroy()
     this.enemies = []
     this.projectiles = []
     this.playerHp = this.playerMaxHp
@@ -89,8 +99,7 @@ export class CombatScene {
     this.player.position.set(this.px, this.py)
     this.player.alpha = 1
     this.spawnWave(w)
-    // keep the player rendered above the field/enemies
-    this.world.addChild(this.player)
+    this.world.addChild(this.player) // keep player above enemies
   }
 
   update(dt: number): void {
@@ -129,12 +138,13 @@ export class CombatScene {
         const dx = target.x - this.px
         const dy = target.y - this.py
         const m = Math.hypot(dx, dy) || 1
-        const g = new Graphics()
-        g.circle(0, 0, FIREBALL_RADIUS).fill('#ff8c1a')
-        g.position.set(this.px, this.py)
-        this.world.addChild(g)
+        const spr = new Sprite(this.tex.fireball)
+        spr.anchor.set(0.5)
+        spr.setSize(FIREBALL_SIZE, FIREBALL_SIZE)
+        spr.position.set(this.px, this.py)
+        this.world.addChild(spr)
         this.projectiles.push({
-          g,
+          spr,
           x: this.px,
           y: this.py,
           vx: (dx / m) * FIREBALL_SPEED,
@@ -148,7 +158,7 @@ export class CombatScene {
     for (const pr of this.projectiles) {
       pr.x += pr.vx * dt
       pr.y += pr.vy * dt
-      pr.g.position.set(pr.x, pr.y)
+      pr.spr.position.set(pr.x, pr.y)
       if (pr.x < -10 || pr.x > w + 10 || pr.y < -10 || pr.y > LOGICAL_H + 10) {
         pr.alive = false
         continue
@@ -166,7 +176,7 @@ export class CombatScene {
     }
     this.projectiles = this.projectiles.filter((pr) => {
       if (!pr.alive) {
-        pr.g.destroy()
+        pr.spr.destroy()
         return false
       }
       return true
@@ -180,7 +190,7 @@ export class CombatScene {
       const m = Math.hypot(dx, dy) || 1
       e.x += (dx / m) * ENEMY_SPEED * dt
       e.y += (dy / m) * ENEMY_SPEED * dt
-      e.g.position.set(e.x, e.y)
+      e.spr.position.set(e.x, e.y)
       if (m <= ENEMY_RADIUS + ph && e.touchCd <= 0 && this.dodgeTime <= 0) {
         this.playerHp -= ENEMY_TOUCH_DAMAGE
         e.touchCd = ENEMY_TOUCH_INTERVAL
@@ -188,7 +198,7 @@ export class CombatScene {
     }
     this.enemies = this.enemies.filter((e) => {
       if (e.hp <= 0) {
-        e.g.destroy()
+        e.spr.destroy()
         return false
       }
       return true
@@ -210,10 +220,10 @@ export class CombatScene {
 
   private spawnWave(w: number): void {
     for (let i = 0; i < WAVE_COUNT; i++) {
-      const g = new Graphics()
-      g.circle(0, 0, ENEMY_RADIUS).fill('#c0392b')
-      g.circle(0, 0, ENEMY_RADIUS).stroke({ color: 0x000000, width: 1, alpha: 0.4 })
-      // spawn along the edges so they walk in
+      const texture = this.tex.enemies[i % this.tex.enemies.length]
+      const spr = new Sprite(texture)
+      spr.anchor.set(0.5)
+      spr.setSize(ENEMY_SIZE, ENEMY_SIZE)
       let x: number
       let y: number
       if (Math.random() < 0.5) {
@@ -223,9 +233,9 @@ export class CombatScene {
         x = Math.random() < 0.5 ? 12 : w - 12
         y = Math.random() * LOGICAL_H
       }
-      g.position.set(x, y)
-      this.world.addChild(g)
-      this.enemies.push({ g, x, y, hp: ENEMY_HP, touchCd: 0 })
+      spr.position.set(x, y)
+      this.world.addChild(spr)
+      this.enemies.push({ spr, x, y, hp: ENEMY_HP, touchCd: 0 })
     }
   }
 

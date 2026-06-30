@@ -28,6 +28,8 @@ export const FIREBALL_RADIUS = 5
 export const ENEMY_SPEED = 38
 export const ENEMY_HP = 30
 export const ENEMY_RADIUS = 10
+export const ENEMY_SIZE = 26 // sprite display size (visual; hitbox uses ENEMY_RADIUS)
+export const FIREBALL_SIZE = 16 // sprite display size
 export const ENEMY_TOUCH_DAMAGE = 8
 export const ENEMY_TOUCH_INTERVAL = 0.8
 

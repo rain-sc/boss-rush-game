@@ -61,13 +61,20 @@ export default function CanvasStage() {
         window.removeEventListener('orientationchange', onOrient)
       }
 
-      // Player sprite texture (placeholder idle).
-      const texture = await Assets.load('/assets/characters/player/male/idle.png')
-      texture.source.scaleMode = 'nearest'
+      // Load sprites and force nearest-neighbour sampling for crisp pixels.
+      const [playerTex, slimeTex, goblinTex, fireballTex] = await Promise.all([
+        Assets.load('/assets/characters/player/male/idle.png'),
+        Assets.load('/assets/enemies/slime/idle.png'),
+        Assets.load('/assets/enemies/goblin/idle.png'),
+        Assets.load('/assets/skills/projectiles/fireball.png'),
+      ])
+      for (const t of [playerTex, slimeTex, goblinTex, fireballTex]) {
+        t.source.scaleMode = 'nearest'
+      }
 
       const scene = new CombatScene({
         world,
-        texture,
+        textures: { player: playerTex, enemies: [slimeTex, goblinTex], fireball: fireballTex },
         getW: () => bounds.w,
         onEnd: (s) => setResult(s),
       })

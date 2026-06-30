@@ -4,6 +4,7 @@
 // Run:  PIXELLAB_API_KEY=xxxx node generate.mjs   (key from env only)
 
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const key = process.env.PIXELLAB_API_KEY;
 if (!key) {
@@ -60,13 +61,58 @@ const allJobs = [
       text_guidance_scale: 8.0,
     },
   },
+
+  // --- Phase 2 batch: replace combat placeholders (written into the frontend) ---
+  {
+    name: "enemy_slime",
+    outPath: "../frontend/public/assets/enemies/slime/idle.png",
+    body: {
+      description: `a small green slime monster, cute round jelly body, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "enemy_goblin",
+    outPath: "../frontend/public/assets/enemies/goblin/idle.png",
+    body: {
+      description: `a small green goblin warrior holding a wooden club, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "fireball",
+    outPath: "../frontend/public/assets/skills/projectiles/fireball.png",
+    body: {
+      description: `a round fiery fireball projectile, bright orange and yellow flames, ${STYLE}`,
+      image_size: { width: 32, height: 32 },
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
 ];
 
-// Optional filter: `node generate.mjs <name>` runs only matching jobs (saves quota).
-const only = process.argv[2];
-const jobs = only ? allJobs.filter((j) => j.name === only) : allJobs;
-if (only && jobs.length === 0) {
-  console.error(`No job named "${only}". Available: ${allJobs.map((j) => j.name).join(", ")}`);
+// Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.
+const names = process.argv.slice(2);
+const jobs = names.length ? allJobs.filter((j) => names.includes(j.name)) : allJobs;
+if (names.length && jobs.length === 0) {
+  console.error(`No matching jobs. Available: ${allJobs.map((j) => j.name).join(", ")}`);
   process.exit(1);
 }
 
@@ -103,8 +149,10 @@ for (const job of jobs) {
       process.exitCode = 1;
       continue;
     }
-    writeFileSync(`output/${job.name}.png`, Buffer.from(b64, "base64"));
-    console.log(`  ✓ saved output/${job.name}.png  (usage: ${JSON.stringify(data.usage)})`);
+    const target = job.outPath ?? `output/${job.name}.png`;
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, Buffer.from(b64, "base64"));
+    console.log(`  ✓ saved ${target}  (usage: ${JSON.stringify(data.usage)})`);
   } catch (err) {
     console.error(`  ✗ ${job.name} failed:`, err?.message || err);
     process.exitCode = 1;
