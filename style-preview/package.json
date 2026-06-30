@@ -1,0 +1,12 @@
+{
+  "name": "style-preview",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway PixelLab style-validation tool (v1). Generates 2 preview images.",
+  "scripts": {
+    "gen": "node generate.mjs"
+  },
+  "dependencies": {
+    "@pixellab-code/pixellab": "*"
+  }
+}
