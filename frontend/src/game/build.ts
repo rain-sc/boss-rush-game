@@ -11,14 +11,14 @@ export type Build = {
 
 export const emptyBuild = (): Build => ({ dmg: 0, cdr: 0, multishot: 0, speed: 0, hp: 0 })
 
-export type SkillCard = { id: keyof Build; name: string; desc: string }
+export type SkillCard = { id: keyof Build; name: string; desc: string; icon: string }
 
 export const SKILL_POOL: SkillCard[] = [
-  { id: 'dmg', name: '烈焰強化', desc: '火球傷害 +6' },
-  { id: 'cdr', name: '急速冷卻', desc: '火球冷卻 -15%' },
-  { id: 'multishot', name: '多重射擊', desc: '火球 +1 發' },
-  { id: 'speed', name: '疾風之靴', desc: '移動速度 +12%' },
-  { id: 'hp', name: '強健體魄', desc: '最大生命 +20' },
+  { id: 'dmg', name: '烈焰強化', desc: '火球傷害 +6', icon: '🔥' },
+  { id: 'cdr', name: '急速冷卻', desc: '火球冷卻 -15%', icon: '⏱️' },
+  { id: 'multishot', name: '多重射擊', desc: '火球 +1 發', icon: '✨' },
+  { id: 'speed', name: '疾風之靴', desc: '移動速度 +12%', icon: '👟' },
+  { id: 'hp', name: '強健體魄', desc: '最大生命 +20', icon: '❤️' },
 ]
 
 /** Three random distinct cards for the between-level draft. */

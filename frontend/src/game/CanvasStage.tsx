@@ -5,6 +5,7 @@ import { initKeyboard, consumePotion } from './input'
 import { CombatScene } from './combat/CombatScene'
 import { emptyBuild, draftThree, type SkillCard } from './build'
 import { getLevelConfig, TOTAL_LEVELS } from './levels'
+import { playerSpritePath } from './player'
 import { loadRun, saveRun, getLoadoutStats, getInventory, useItem } from '../api'
 
 type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
@@ -54,7 +55,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         dragonTex,
         groundTex,
       ] = await Promise.all([
-        Assets.load('/assets/characters/player/male/idle.png'),
+        Assets.load(playerSpritePath()),
         Assets.load('/assets/enemies/slime/idle.png'),
         Assets.load('/assets/enemies/goblin/idle.png'),
         Assets.load('/assets/skills/projectiles/fireball.png'),
@@ -238,6 +239,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {cards.map((c, i) => (
                 <button key={i} onClick={() => pickRef.current(c)} style={cardStyle}>
+                  <div style={{ fontSize: 26, marginBottom: 4 }}>{c.icon}</div>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>{c.name}</div>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>{c.desc}</div>
                 </button>

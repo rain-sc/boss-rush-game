@@ -9,6 +9,8 @@ import FullscreenButton from './components/FullscreenButton'
 import InventoryPanel from './components/InventoryPanel'
 import FarmPanel from './components/FarmPanel'
 import HousePanel from './components/HousePanel'
+import CharacterSelect from './components/CharacterSelect'
+import { getGender, type Gender } from './game/player'
 import { getInventory, addItem, type InvItem } from './api'
 
 type Screen = 'hub' | 'run'
@@ -27,11 +29,16 @@ function App() {
   const [showFarm, setShowFarm] = useState(false)
   const [showHouse, setShowHouse] = useState(false)
   const [inv, setInv] = useState<InvItem[]>([])
+  const [gender, setGenderState] = useState<Gender | null>(getGender())
 
   const refreshInv = () => getInventory().then(setInv)
   useEffect(() => {
     refreshInv()
   }, [])
+
+  if (!gender) {
+    return <CharacterSelect onDone={() => setGenderState(getGender())} />
+  }
 
   const flash = (msg: string) => {
     setToast(msg)

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Application, Assets, Container, Sprite, Text, TilingSprite, type Texture } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, PLAYER_SIZE, PLAYER_HIT_RADIUS } from './config'
 import { initKeyboard, getDirection, consumeInteract } from './input'
+import { playerSpritePath } from './player'
 
 type Facility = { id: string; label: string; x: number; y: number; tex: string; size: number; gather: boolean }
 
@@ -49,7 +50,7 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
 
       const [groundTex, playerTex] = await Promise.all([
         Assets.load('/assets/tiles/battle/forest_ground.png'),
-        Assets.load('/assets/characters/player/male/idle.png'),
+        Assets.load(playerSpritePath()),
       ])
       for (const t of [groundTex, playerTex]) t.source.scaleMode = 'nearest'
 
