@@ -1,5 +1,6 @@
 import CanvasStage from './game/CanvasStage'
 import TouchJoystick from './components/TouchJoystick'
+import TouchDodgeButton from './components/TouchDodgeButton'
 import FullscreenButton from './components/FullscreenButton'
 
 function App() {
@@ -7,6 +8,7 @@ function App() {
     <>
       <CanvasStage />
       <TouchJoystick />
+      <TouchDodgeButton />
       <FullscreenButton />
       <div
         style={{
@@ -20,7 +22,7 @@ function App() {
           pointerEvents: 'none',
         }}
       >
-        Phase 1 — WASD / 方向鍵 或 左下搖桿 移動
+        Phase 2 — 移動:WASD / 搖桿　閃避:空白鍵 / 閃避鈕　技能自動施放
       </div>
 
       <div className="rotate-notice">🔄 請將手機旋轉為橫向以獲得最佳體驗</div>

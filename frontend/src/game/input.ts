@@ -6,8 +6,26 @@ const keys = new Set<string>()
 // Virtual joystick state (written by <TouchJoystick>), range [-1, 1].
 export const touch = { x: 0, y: 0, active: false }
 
+// One-shot dodge request (keyboard space or touch button), consumed per use.
+let dodgeQueued = false
+export function requestDodge(): void {
+  dodgeQueued = true
+}
+export function consumeDodge(): boolean {
+  const v = dodgeQueued
+  dodgeQueued = false
+  return v
+}
+
 export function initKeyboard(): () => void {
-  const down = (e: KeyboardEvent) => keys.add(e.key.toLowerCase())
+  const down = (e: KeyboardEvent) => {
+    const k = e.key.toLowerCase()
+    if (k === ' ' || k === 'spacebar') {
+      requestDodge()
+      e.preventDefault()
+    }
+    keys.add(k)
+  }
   const up = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase())
   window.addEventListener('keydown', down)
   window.addEventListener('keyup', up)
