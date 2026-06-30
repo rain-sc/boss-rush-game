@@ -11,10 +11,11 @@ React(選單 / 面板)+ Canvas(可走動場景:家園 hub 與戰鬥)混合架構
 | 畫面切換 | **screen state machine**(Zustand 管理),非 URL 路由 | 遊戲用狀態切畫面比網址直覺 |
 | 全域狀態 | **Zustand** | 輕量;存 player / 背包 / 裝備 / 進度 |
 | 樣式 | **Tailwind CSS** + 自訂像素主題 | 響應式快、易維護 |
+| UI 動畫 | **Framer Motion** | 抽選卡 / 面板 / 過場宣告式動畫 |
 | 中文像素字 | **Zpix(最像素)/ Cubic 11** | 中文也要像素風才統一 |
 | 面板 / 邊框 | 9-slice 像素邊框(PixelLab UI 素材) | 風格一致 |
-| 可走動場景 | **Canvas 遊戲迴圈**(家園 + 戰鬥共用) | 引擎重用 |
-| 場景內 HUD | 畫在 Canvas | 跟像素縮放一致 |
+| 可走動場景 | **Pixi.js**(WebGL Canvas,家園 + 戰鬥共用) | sprite 動畫 / 彈幕 / 粒子,`tint` 換色,效能佳 |
+| 場景內 HUD | 畫在 Pixi Canvas | 跟像素縮放一致 |
 | 設施 / 選單面板 | **React DOM 疊層**(CSS 響應式) | 文字清楚、版面自動重排 |
 
 > **關鍵架構**:家園 hub 與戰鬥都是 Canvas 場景,共用「移動 + 碰撞 + 渲染」核心;差別只在場景內容(設施 vs 敵人)。設施互動、背包、合成等**面板用 DOM 疊在 Canvas 上**。

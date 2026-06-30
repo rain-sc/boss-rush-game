@@ -29,7 +29,7 @@
 
 | 層 | 技術 |
 |---|---|
-| 前端 | React (UI/選單) + HTML5 Canvas(戰鬥迴圈) |
+| 前端 | React(UI/選單)+ **Pixi.js**(Canvas 戰鬥/場景渲染)+ **Framer Motion**(UI 動畫)+ Tailwind + Zustand |
 | 後端 | Java + Spring Boot(REST API) |
 | 資料庫 | PostgreSQL(技能/裝備設定用 `jsonb`) |
 | 美術素材 | PixelLab AI(API 整合,key 存 `PIXELLAB_API_KEY`)+ 程式粒子特效 |

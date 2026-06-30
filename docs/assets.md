@@ -153,6 +153,8 @@ frontend/public/assets/
 }
 ```
 
+> 此 manifest 直接餵給 **Pixi.js `AnimatedSprite` / spritesheet** 播放動畫;元素換色用 Pixi `sprite.tint`(一套基礎特效多色重用,見 [§3](#3-素材清單))。載入器把每筆 strip 切成材質幀。
+
 ---
 
 ## 6. PixelLab 工作流程

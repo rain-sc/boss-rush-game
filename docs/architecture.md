@@ -4,11 +4,11 @@
 
 ```
 ┌─────────────── React 前端 ───────────────┐
-│  Canvas 場景層 (遊戲迴圈,非 DOM)          │
+│  Canvas 場景層 (Pixi.js 遊戲迴圈)         │
 │   ├ 家園 hub:可走動,設施互動            │
 │   └ 戰鬥:即時移動 / 閃避;技能自動施放    │
 │      (兩者共用移動 + 渲染核心)           │
-│  React DOM 疊層 (UI / 面板)                │
+│  React DOM 疊層 (UI / 面板,Framer Motion)│
 │   ├ 設施面板:耕種 / 釣魚 / 採集 / 合成     │
 │   ├ 技能起手與抽選、裝備 / 背包 / 強化      │
 │   └ 主選單 / 結算 / 進度                    │
@@ -25,8 +25,8 @@
 
 | 層 | 負責 |
 |---|---|
-| Canvas 場景 | 家園 hub(可走動)與戰鬥(前端主導 client-authoritative),共用移動 + 渲染核心 |
-| React DOM | 設施面板、抽選、背包、裝備、主選單、結算等 UI 疊層 |
+| Canvas 場景 | 家園 hub(可走動)與戰鬥(前端主導 client-authoritative),共用移動 + 渲染核心;**Pixi.js** 渲染(sprite 動畫 / 彈幕 / 粒子,`tint` 換色) |
+| React DOM | 設施面板、抽選、背包、裝備、主選單、結算等 UI 疊層;**Framer Motion** 過場 / 卡片動畫 |
 | Spring Boot | 存檔讀取、裝備屬性彙整、合成 / 生活邏輯、合理性檢查 |
 | Postgres | 持久化;技能 / 裝備設定用 `jsonb` |
 
