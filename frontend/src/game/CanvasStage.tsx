@@ -6,6 +6,7 @@ import { CombatScene } from './combat/CombatScene'
 import { emptyBuild, draftThree, type SkillCard } from './build'
 import { getLevelConfig, TOTAL_LEVELS } from './levels'
 import { playerSpritePath } from './player'
+import { playSfx } from './sound'
 import { loadRun, saveRun, getLoadoutStats, getInventory, useItem } from '../api'
 
 type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
@@ -99,10 +100,10 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
           build: JSON.stringify(buildRef),
         })
 
-      const beginLevel = (lvl: number) => {
+      const beginLevel = (lvl: number, fullHeal: boolean) => {
         levelRef.current = lvl
         setLevel(lvl)
-        scene.startLevel(getLevelConfig(lvl), buildRef)
+        scene.startLevel(getLevelConfig(lvl), buildRef, fullHeal)
         phaseRef.current = 'combat'
         setPhase('combat')
       }
@@ -127,14 +128,15 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       }
 
       const pickCard = (c: SkillCard) => {
+        playSfx('click')
         buildRef = { ...buildRef, [c.id]: buildRef[c.id] + 1 }
-        beginLevel(levelRef.current + 1)
+        beginLevel(levelRef.current + 1, false)
         saveCurrent('PLAYING')
       }
 
       const restartRun = () => {
         buildRef = emptyBuild()
-        beginLevel(1)
+        beginLevel(1, true)
         saveCurrent('PLAYING')
       }
 
@@ -159,7 +161,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       pixi.stage.addChild(hud)
       const hpBg = new Graphics()
       const hpFill = new Graphics()
-      const info = new Text({ text: '', style: { fill: 0xffffff, fontSize: 13, fontFamily: 'sans-serif' } })
+      const info = new Text({ text: '', style: { fill: 0xffffff, fontSize: 13, fontFamily: 'Zpix, sans-serif' } })
       hud.addChild(hpBg, hpFill, info)
       const drawHud = () => {
         const x = 12
@@ -213,10 +215,10 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         } catch {
           buildRef = emptyBuild()
         }
-        beginLevel(saved.currentLevel)
+        beginLevel(saved.currentLevel, true)
       } else {
         buildRef = emptyBuild()
-        beginLevel(1)
+        beginLevel(1, true)
       }
     })()
 
@@ -235,10 +237,15 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       {phase === 'draft' && (
         <div style={overlay}>
           <div style={{ textAlign: 'center' }}>
-            <h3 style={{ color: '#fff', fontFamily: 'sans-serif' }}>選擇一項強化(第 {level} 關通過)</h3>
+            <h3 style={{ color: '#fff', fontFamily: 'Zpix, sans-serif' }}>選擇一項強化(第 {level} 關通過)</h3>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               {cards.map((c, i) => (
-                <button key={i} onClick={() => pickRef.current(c)} style={cardStyle}>
+                <button
+                  key={i}
+                  onClick={() => pickRef.current(c)}
+                  className="ui-btn"
+                  style={{ width: 150, padding: '14px 12px', textAlign: 'center' }}
+                >
                   <div style={{ fontSize: 26, marginBottom: 4 }}>{c.icon}</div>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>{c.name}</div>
                   <div style={{ fontSize: 13, opacity: 0.8 }}>{c.desc}</div>
@@ -251,7 +258,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
 
       {(phase === 'won' || phase === 'lost') && (
         <div style={overlay}>
-          <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
+          <div style={{ textAlign: 'center', fontFamily: 'Zpix, sans-serif' }}>
             <h2 style={{ color: phase === 'won' ? '#2ecc71' : '#e74c3c', fontSize: 40, margin: 0 }}>
               {phase === 'won' ? '通關!' : '你死了'}
             </h2>
@@ -284,15 +291,6 @@ const overlay: CSSProperties = {
   justifyContent: 'center',
   background: 'rgba(0,0,0,0.6)',
 }
-const cardStyle: CSSProperties = {
-  width: 150,
-  padding: '14px 12px',
-  borderRadius: 10,
-  border: 'none',
-  background: '#fff',
-  cursor: 'pointer',
-  textAlign: 'center',
-}
 const btn: CSSProperties = {
   marginTop: 16,
   padding: '10px 22px',
@@ -308,7 +306,7 @@ const potionBadge: CSSProperties = {
   left: 12,
   zIndex: 12,
   color: '#fff',
-  font: '600 13px sans-serif',
+  font: '600 13px Zpix, sans-serif',
   textShadow: '0 1px 3px #000',
   pointerEvents: 'none',
 }

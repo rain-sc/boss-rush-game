@@ -256,6 +256,34 @@ const allJobs = [
       text_guidance_scale: 8.0,
     },
   },
+
+  // --- Phase 6 batch: 9-slice UI frames ---
+  {
+    name: "ui_panel",
+    outPath: "../frontend/public/assets/ui/panel.png",
+    body: {
+      description: `a square UI panel with a thick ornate brown wooden border and a flat dark parchment center, game interface frame, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      no_background: false,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "ui_button",
+    outPath: "../frontend/public/assets/ui/button.png",
+    body: {
+      description: `a square wooden game UI button with a raised bevel and brown border, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      no_background: false,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
 ];
 
 // Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.

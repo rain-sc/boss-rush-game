@@ -128,7 +128,7 @@ const topHint: CSSProperties = {
   right: 0,
   textAlign: 'center',
   color: 'rgba(255,255,255,0.65)',
-  font: '12px sans-serif',
+  font: '12px Zpix, sans-serif',
   pointerEvents: 'none',
 }
 const invBtn: CSSProperties = {
@@ -150,7 +150,7 @@ const prompt: CSSProperties = {
   right: 0,
   textAlign: 'center',
   color: '#fff',
-  font: '14px sans-serif',
+  font: '14px Zpix, sans-serif',
   textShadow: '0 1px 3px #000',
   pointerEvents: 'none',
 }
@@ -161,7 +161,7 @@ const toastStyle: CSSProperties = {
   right: 0,
   textAlign: 'center',
   color: '#fff',
-  font: '600 14px sans-serif',
+  font: '600 14px Zpix, sans-serif',
   textShadow: '0 1px 3px #000',
   pointerEvents: 'none',
 }

@@ -1,15 +1,17 @@
 import type { CSSProperties } from 'react'
 import { setGender, type Gender } from '../game/player'
+import { playSfx } from '../game/sound'
 
 /** First-run character choice (cosmetic male/female). */
 export default function CharacterSelect({ onDone }: { onDone: () => void }) {
   const choose = (g: Gender) => {
+    playSfx('click')
     setGender(g)
     onDone()
   }
   return (
     <div style={overlay}>
-      <h2 style={{ color: '#fff', fontFamily: 'sans-serif', marginBottom: 20 }}>選擇角色</h2>
+      <h2 style={{ color: '#fff', fontFamily: 'Zpix, sans-serif', marginBottom: 20 }}>選擇角色</h2>
       <div style={{ display: 'flex', gap: 24 }}>
         {(['male', 'female'] as Gender[]).map((g) => (
           <button key={g} onClick={() => choose(g)} style={card}>
@@ -47,5 +49,5 @@ const card: CSSProperties = {
   border: 'none',
   background: '#fff',
   cursor: 'pointer',
-  fontFamily: 'sans-serif',
+  fontFamily: 'Zpix, sans-serif',
 }

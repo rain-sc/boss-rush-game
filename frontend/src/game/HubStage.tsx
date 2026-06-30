@@ -76,7 +76,7 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
         markers[f.id] = spr
         const label = new Text({
           text: f.label,
-          style: { fill: 0xffffff, fontSize: 9, fontFamily: 'sans-serif', stroke: { color: 0x000000, width: 3 } },
+          style: { fill: 0xffffff, fontSize: 9, fontFamily: 'Zpix, sans-serif', stroke: { color: 0x000000, width: 3 } },
         })
         label.anchor.set(0.5)
         label.position.set(f.x, f.y - f.size / 2 - 8)

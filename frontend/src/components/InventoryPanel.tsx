@@ -5,7 +5,7 @@ import { itemName } from '../game/items'
 export default function InventoryPanel({ items, onClose }: { items: InvItem[]; onClose: () => void }) {
   return (
     <div style={overlay}>
-      <div style={panel}>
+      <div className="ui-panel" style={panel}>
         <h3 style={{ marginTop: 0 }}>背包 / 倉庫</h3>
         {items.length === 0 ? (
           <p style={{ opacity: 0.7 }}>還沒有任何材料,去家園採集 / 耕種 / 釣魚吧。</p>
@@ -44,7 +44,7 @@ const overlay: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   background: 'rgba(0,0,0,0.55)',
-  fontFamily: 'sans-serif',
+  fontFamily: 'Zpix, sans-serif',
 }
 const panel: CSSProperties = {
   width: 280,

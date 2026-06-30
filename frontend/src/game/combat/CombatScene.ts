@@ -18,10 +18,12 @@ import {
   ENEMY_SIZE,
   ENEMY_TOUCH_DAMAGE,
   ENEMY_TOUCH_INTERVAL,
+  LEVEL_HEAL_FRACTION,
 } from '../config'
 import { getDirection, consumeDodge } from '../input'
 import { emptyBuild, type Build } from '../build'
 import { type LevelConfig } from '../levels'
+import { playSfx } from '../sound'
 
 type Enemy = {
   spr: Sprite
@@ -110,17 +112,20 @@ export class CombatScene {
   healPlayer(amount: number): void {
     if (this.state !== 'playing') return
     this.playerHp = Math.min(this.playerMaxHp, this.playerHp + amount)
+    playSfx('potion')
   }
 
-  /** Set up a level: apply the build, full-heal, spawn the wave or boss. */
-  startLevel(config: LevelConfig, build: Build): void {
+  /** Set up a level: apply build, heal (full on fresh run else a fraction), spawn. */
+  startLevel(config: LevelConfig, build: Build, fullHeal: boolean): void {
     this.build = build
     this.clearEntities()
     this.state = 'playing'
     this.attackCd = 0
     this.dodgeTime = 0
     this.dodgeCd = 0
-    this.playerHp = this.playerMaxHp
+    this.playerHp = fullHeal
+      ? this.playerMaxHp
+      : Math.min(this.playerMaxHp, this.playerHp + this.playerMaxHp * LEVEL_HEAL_FRACTION)
 
     const w = this.getW()
     this.px = w / 2
@@ -165,6 +170,7 @@ export class CombatScene {
       const target = this.nearestEnemy()
       if (target) {
         this.attackCd = Math.max(0.2, FIREBALL_CD * Math.pow(0.85, this.build.cdr))
+        playSfx('shoot')
         const base = Math.atan2(target.y - this.py, target.x - this.px)
         const shots = 1 + this.build.multishot
         const dmg = FIREBALL_DAMAGE + this.build.dmg * 6 + this.equipAttack
@@ -204,6 +210,7 @@ export class CombatScene {
         if (dx * dx + dy * dy <= r * r) {
           e.hp -= pr.dmg
           pr.alive = false
+          playSfx('hit')
           break
         }
       }
@@ -229,6 +236,7 @@ export class CombatScene {
       if (m <= e.radius + ph && e.touchCd <= 0 && this.dodgeTime <= 0) {
         this.playerHp -= e.touchDmg
         e.touchCd = ENEMY_TOUCH_INTERVAL
+        playSfx('hurt')
       }
     }
     this.enemies = this.enemies.filter((e) => {
@@ -243,9 +251,11 @@ export class CombatScene {
     if (this.playerHp <= 0) {
       this.playerHp = 0
       this.state = 'died'
+      playSfx('lose')
       this.onDied?.()
     } else if (this.enemies.length === 0) {
       this.state = 'cleared'
+      playSfx('clear')
       this.onCleared?.()
     }
   }

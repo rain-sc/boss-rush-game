@@ -32,7 +32,7 @@ export default function FarmPanel({ onClose, onChanged }: { onClose: () => void;
 
   return (
     <div style={overlay}>
-      <div style={panel}>
+      <div className="ui-panel" style={panel}>
         <h3 style={{ marginTop: 0 }}>農田(種 {itemName(CROP)},{GROW_SECONDS}s 成熟)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {Array.from({ length: PLOT_COUNT }, (_, i) => {
@@ -73,7 +73,7 @@ const overlay: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   background: 'rgba(0,0,0,0.55)',
-  fontFamily: 'sans-serif',
+  fontFamily: 'Zpix, sans-serif',
 }
 const panel: CSSProperties = { width: 320, maxWidth: '92vw', background: '#fff', borderRadius: 12, padding: 18 }
 const plot: CSSProperties = {

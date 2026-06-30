@@ -12,6 +12,7 @@ import {
   type InvItem,
 } from '../api'
 import { itemName } from '../game/items'
+import { playSfx } from '../game/sound'
 
 export default function HousePanel({
   items,
@@ -45,6 +46,7 @@ export default function HousePanel({
   }, [])
 
   const doCraft = async (id: string) => {
+    playSfx('click')
     const res = await craft(id)
     if (res.ok) {
       onChanged()
@@ -65,7 +67,7 @@ export default function HousePanel({
 
   return (
     <div style={overlay}>
-      <div style={panel}>
+      <div className="ui-panel" style={panel}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <button style={tabBtn(tab === 'craft')} onClick={() => setTab('craft')}>
             合成
@@ -155,7 +157,7 @@ const overlay: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   background: 'rgba(0,0,0,0.55)',
-  fontFamily: 'sans-serif',
+  fontFamily: 'Zpix, sans-serif',
 }
 const panel: CSSProperties = { width: 360, maxWidth: '94vw', background: '#fff', borderRadius: 12, padding: 16 }
 const list: CSSProperties = { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }

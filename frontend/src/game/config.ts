@@ -38,3 +38,7 @@ export const WAVE_COUNT = 6
 
 // Healing potion restores this much HP when used in combat.
 export const POTION_HEAL = 40
+
+// HP carries between levels; clearing a level heals this fraction of max HP
+// (so potions / healing matter). A fresh run / restart starts at full HP.
+export const LEVEL_HEAL_FRACTION = 0.3

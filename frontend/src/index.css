@@ -1,3 +1,10 @@
+/* Chinese pixel font (Zpix). Falls back to sans-serif if the CDN is unreachable. */
+@font-face {
+  font-family: 'Zpix';
+  src: url('https://cdn.jsdelivr.net/gh/SolidZORO/zpix-pixel-font/dist/Zpix.ttf') format('truetype');
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -10,12 +17,31 @@ body,
   height: 100%;
   overflow: hidden;
   background: #000;
+  font-family: 'Zpix', sans-serif;
 }
 
 /* pixel-art canvas: never smooth on scale */
 canvas {
   display: block;
   image-rendering: pixelated;
+}
+
+/* 9-slice UI frames (generated pixel-art borders). */
+.ui-panel {
+  border: 14px solid transparent;
+  border-image: url('/assets/ui/panel.png') 14 / 14px stretch;
+}
+.ui-btn {
+  border: 9px solid transparent;
+  border-image: url('/assets/ui/button.png') 14 fill / 9px stretch;
+  background: transparent;
+  color: #2a1d0c;
+  font-family: 'Zpix', sans-serif;
+  cursor: pointer;
+}
+.ui-btn:disabled {
+  filter: grayscale(0.6) brightness(0.85);
+  cursor: not-allowed;
 }
 
 /* Landscape-designed game: ask touch users to rotate when in portrait. */
