@@ -34,7 +34,12 @@ type Enemy = {
   speed: number
   touchDmg: number
   size: number
+  isBoss: boolean
+  shootEvery: number // 0 = doesn't shoot
+  atkCd: number
+  flash: number
 }
+type EnemyShot = { g: Graphics; x: number; y: number; vx: number; vy: number; dmg: number; alive: boolean }
 type Projectile = {
   spr: Sprite
   x: number
@@ -75,7 +80,9 @@ export class CombatScene {
   private lastDir = { x: 0, y: 1 }
   private enemies: Enemy[] = []
   private projectiles: Projectile[] = []
+  private enemyShots: EnemyShot[] = []
   private effects: Effect[] = []
+  private playerFlash = 0
   private build: SkillBuild = starterBuild()
   private skillCd: Record<string, number> = {}
   private equipAttack = 0
@@ -113,6 +120,16 @@ export class CombatScene {
 
   get enemyCount(): number {
     return this.enemies.length
+  }
+
+  /** HP of the boss on a boss level (null if no boss present). */
+  get bossHp(): number | null {
+    const b = this.enemies.find((e) => e.isBoss)
+    return b ? b.hp : null
+  }
+  get bossMaxHp(): number {
+    const b = this.enemies.find((e) => e.isBoss)
+    return b ? b.maxHp : 1
   }
 
   setEquip(attack: number, maxHp: number): void {
@@ -180,6 +197,12 @@ export class CombatScene {
     this.py = Math.max(ph, Math.min(LOGICAL_H - ph, this.py))
     this.player.position.set(this.px, this.py)
     this.player.alpha = this.dodgeTime > 0 ? 0.45 : 1
+    if (this.playerFlash > 0) {
+      this.playerFlash -= dt
+      this.player.tint = 0xff6666
+    } else {
+      this.player.tint = 0xffffff
+    }
     const moving = dir.x !== 0 || dir.y !== 0 || this.dodgeTime > 0
     if (moving) {
       if (!this.player.playing) this.player.play()
@@ -212,6 +235,7 @@ export class CombatScene {
     this.updateProjectiles(dt, w)
     this.updateEffects(dt)
     this.updateEnemies(dt, ph)
+    this.updateEnemyShots(dt, w, ph)
 
     if (this.playerHp <= 0) {
       this.playerHp = 0
@@ -275,8 +299,54 @@ export class CombatScene {
   private applyDamage(e: Enemy, dmg: number): void {
     const d = Math.random() < this.critChance ? dmg * 2 : dmg
     e.hp -= d
+    e.flash = 0.08
     if (this.lifestealAmt > 0) this.playerHp = Math.min(this.playerMaxHp, this.playerHp + this.lifestealAmt)
     playSfx('hit')
+  }
+
+  private fireEnemyShot(e: Enemy): void {
+    const base = Math.atan2(this.py - e.y, this.px - e.x)
+    const enraged = e.hp < e.maxHp * 0.5
+    const spread = enraged ? [-0.3, -0.1, 0.1, 0.3] : [-0.2, 0, 0.2]
+    const speed = 115
+    for (const off of spread) {
+      const ang = base + off
+      const g = new Graphics()
+      g.circle(0, 0, 4).fill('#d63031')
+      g.circle(0, 0, 4).stroke({ color: 0x000000, width: 1, alpha: 0.4 })
+      g.position.set(e.x, e.y)
+      this.world.addChild(g)
+      this.enemyShots.push({ g, x: e.x, y: e.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: 10, alive: true })
+    }
+  }
+
+  private updateEnemyShots(dt: number, w: number, ph: number): void {
+    for (const s of this.enemyShots) {
+      s.x += s.vx * dt
+      s.y += s.vy * dt
+      s.g.position.set(s.x, s.y)
+      if (s.x < -12 || s.x > w + 12 || s.y < -12 || s.y > LOGICAL_H + 12) {
+        s.alive = false
+        continue
+      }
+      const dx = this.px - s.x
+      const dy = this.py - s.y
+      if (dx * dx + dy * dy <= (ph + 4) * (ph + 4)) {
+        s.alive = false
+        if (this.dodgeTime <= 0) {
+          this.playerHp -= s.dmg
+          this.playerFlash = 0.12
+          playSfx('hurt')
+        }
+      }
+    }
+    this.enemyShots = this.enemyShots.filter((s) => {
+      if (!s.alive) {
+        s.g.destroy()
+        return false
+      }
+      return true
+    })
   }
 
   private spawnEffect(skillId: string, x: number, y: number, size: number): void {
@@ -348,6 +418,24 @@ export class CombatScene {
       e.y += (dy / m) * e.speed * dt
       e.spr.position.set(e.x, e.y)
       this.drawEnemyBar(e)
+
+      // hurt flash
+      if (e.flash > 0) {
+        e.flash -= dt
+        e.spr.tint = 0xff6666
+      } else {
+        e.spr.tint = 0xffffff
+      }
+
+      // boss ranged attack (faster when enraged below 50% HP)
+      if (e.isBoss && e.shootEvery > 0) {
+        e.atkCd -= dt
+        if (e.atkCd <= 0) {
+          this.fireEnemyShot(e)
+          e.atkCd = e.shootEvery * (e.hp < e.maxHp * 0.5 ? 0.6 : 1)
+        }
+      }
+
       if (m <= e.radius + ph && e.touchCd <= 0 && this.dodgeTime <= 0) {
         this.playerHp -= e.touchDmg
         e.touchCd = ENEMY_TOUCH_INTERVAL
@@ -370,17 +458,21 @@ export class CombatScene {
       e.bar.destroy()
     }
     for (const pr of this.projectiles) pr.spr.destroy()
+    for (const s of this.enemyShots) s.g.destroy()
     for (const fx of this.effects) fx.spr.destroy()
     this.enemies = []
     this.projectiles = []
+    this.enemyShots = []
     this.effects = []
+    this.playerFlash = 0
+    this.player.tint = 0xffffff
   }
 
   private spawnLevel(config: LevelConfig, w: number): void {
     if (config.isBoss) {
       const frames = this.tex.bosses[config.level] ?? this.tex.enemies[0]
       const size = config.level >= 20 ? 88 : 64
-      this.addEnemy(frames, w / 2, size / 2 + 14, config.enemyHp, size, size * 0.4, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2)
+      this.addEnemy(frames, w / 2, size / 2 + 14, config.enemyHp, size, size * 0.4, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2, true, 1.5)
       return
     }
     for (let i = 0; i < config.enemyCount; i++) {
@@ -407,6 +499,8 @@ export class CombatScene {
     radius: number,
     speed: number,
     touchDmg: number,
+    isBoss = false,
+    shootEvery = 0,
   ): void {
     const spr = new AnimatedSprite(frames)
     spr.anchor.set(0.5)
@@ -417,7 +511,10 @@ export class CombatScene {
     this.world.addChild(spr)
     const bar = new Graphics()
     this.world.addChild(bar)
-    const e: Enemy = { spr, bar, x, y, hp, maxHp: hp, touchCd: 0, radius, speed, touchDmg, size }
+    const e: Enemy = {
+      spr, bar, x, y, hp, maxHp: hp, touchCd: 0, radius, speed, touchDmg, size,
+      isBoss, shootEvery, atkCd: shootEvery, flash: 0,
+    }
     this.drawEnemyBar(e)
     this.enemies.push(e)
   }

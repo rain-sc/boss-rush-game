@@ -164,7 +164,10 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       const hpBg = new Graphics()
       const hpFill = new Graphics()
       const info = new Text({ text: '', style: { fill: 0xffffff, fontSize: 13, fontFamily: 'Zpix, sans-serif' } })
-      hud.addChild(hpBg, hpFill, info)
+      const bossBar = new Graphics()
+      const bossText = new Text({ text: '', style: { fill: 0xffffff, fontSize: 12, fontFamily: 'Zpix, sans-serif' } })
+      bossText.anchor.set(0.5, 0)
+      hud.addChild(hpBg, hpFill, info, bossBar, bossText)
       const drawHud = () => {
         const x = 12
         const y = 12
@@ -179,6 +182,22 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         const lvl = levelRef.current
         const boss = lvl % 5 === 0
         info.text = `HP ${Math.ceil(scene.playerHp)}/${scene.playerMaxHp}    關卡 ${lvl}/${TOTAL_LEVELS}${boss ? ' (BOSS)' : ''}    敵人 ${scene.enemyCount}`
+
+        // boss HP bar across the top
+        bossBar.clear()
+        const bhp = scene.bossHp
+        if (bhp !== null) {
+          const bw = Math.min(360, pixi.screen.width - 40)
+          const bx = (pixi.screen.width - bw) / 2
+          const by = 12
+          bossBar.roundRect(bx, by, bw, 12, 3).fill({ color: 0x000000, alpha: 0.55 })
+          const bf = Math.max(0, bhp / scene.bossMaxHp)
+          if (bf > 0) bossBar.roundRect(bx + 2, by + 2, (bw - 4) * bf, 8, 2).fill(0xc0392b)
+          bossText.position.set(pixi.screen.width / 2, by + 14)
+          bossText.text = 'BOSS'
+        } else {
+          bossText.text = ''
+        }
       }
 
       // Equipment stats (aggregated by backend) + potion count.
