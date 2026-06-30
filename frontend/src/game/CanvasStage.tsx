@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Application, Assets, Container, Graphics, Text } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Text, TilingSprite } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H } from './config'
 import { initKeyboard } from './input'
 import { CombatScene } from './combat/CombatScene'
@@ -41,21 +41,41 @@ export default function CanvasStage() {
       const world = new Container()
       pixi.stage.addChild(world)
       const bounds = { w: LOGICAL_W }
-      const field = new Graphics()
-      world.addChild(field)
-      const drawField = (w: number) => {
-        field.clear()
-        field.rect(0, 0, w, LOGICAL_H).fill('#2e7d32')
-        for (let x = 0; x <= w; x += 16) field.moveTo(x, 0).lineTo(x, LOGICAL_H)
-        for (let y = 0; y <= LOGICAL_H; y += 16) field.moveTo(0, y).lineTo(w, y)
-        field.stroke({ color: 0x000000, alpha: 0.08, width: 1 })
-      }
+
+      const [
+        playerTex,
+        slimeTex,
+        goblinTex,
+        fireballTex,
+        orcTex,
+        gobChiefTex,
+        bearTex,
+        dragonTex,
+        groundTex,
+      ] = await Promise.all([
+        Assets.load('/assets/characters/player/male/idle.png'),
+        Assets.load('/assets/enemies/slime/idle.png'),
+        Assets.load('/assets/enemies/goblin/idle.png'),
+        Assets.load('/assets/skills/projectiles/fireball.png'),
+        Assets.load('/assets/bosses/orc_warlord/idle.png'),
+        Assets.load('/assets/bosses/goblin_chieftain/idle.png'),
+        Assets.load('/assets/bosses/dire_bear/idle.png'),
+        Assets.load('/assets/bosses/forest_dragon/idle.png'),
+        Assets.load('/assets/tiles/battle/forest_ground.png'),
+      ])
+      for (const t of [playerTex, slimeTex, goblinTex, fireballTex, orcTex, gobChiefTex, bearTex, dragonTex, groundTex])
+        t.source.scaleMode = 'nearest'
+
+      // Tiled forest ground fills the (dynamic-width) field.
+      const ground = new TilingSprite({ texture: groundTex, width: LOGICAL_W, height: LOGICAL_H })
+      world.addChild(ground)
+
       const layout = () => {
         const scale = pixi.screen.height / LOGICAL_H
         world.scale.set(scale)
         world.position.set(0, 0)
         bounds.w = Math.ceil(pixi.screen.width / scale)
-        drawField(bounds.w)
+        ground.width = bounds.w
       }
       layout()
       const onOrient = () => window.setTimeout(layout, 200)
@@ -65,14 +85,6 @@ export default function CanvasStage() {
         window.removeEventListener('resize', layout)
         window.removeEventListener('orientationchange', onOrient)
       }
-
-      const [playerTex, slimeTex, goblinTex, fireballTex] = await Promise.all([
-        Assets.load('/assets/characters/player/male/idle.png'),
-        Assets.load('/assets/enemies/slime/idle.png'),
-        Assets.load('/assets/enemies/goblin/idle.png'),
-        Assets.load('/assets/skills/projectiles/fireball.png'),
-      ])
-      for (const t of [playerTex, slimeTex, goblinTex, fireballTex]) t.source.scaleMode = 'nearest'
 
       let scene: CombatScene
 
@@ -129,7 +141,12 @@ export default function CanvasStage() {
 
       scene = new CombatScene({
         world,
-        textures: { player: playerTex, enemies: [slimeTex, goblinTex], fireball: fireballTex, boss: goblinTex },
+        textures: {
+          player: playerTex,
+          enemies: [slimeTex, goblinTex],
+          fireball: fireballTex,
+          bosses: { 5: orcTex, 10: gobChiefTex, 15: bearTex, 20: dragonTex },
+        },
         getW: () => bounds.w,
         onCleared: handleCleared,
         onDied: handleDied,

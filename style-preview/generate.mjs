@@ -106,6 +106,82 @@ const allJobs = [
       text_guidance_scale: 8.0,
     },
   },
+
+  // --- Phase 3 batch: map-1 bosses (static) + forest ground tile ---
+  {
+    name: "boss_orc_warlord",
+    outPath: "../frontend/public/assets/bosses/orc_warlord/idle.png",
+    body: {
+      description: `a large armored orc warlord boss wielding a giant axe, menacing, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "boss_goblin_chieftain",
+    outPath: "../frontend/public/assets/bosses/goblin_chieftain/idle.png",
+    body: {
+      description: `a large goblin chieftain boss with bone armor and a spiked club, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "boss_dire_bear",
+    outPath: "../frontend/public/assets/bosses/dire_bear/idle.png",
+    body: {
+      description: `a huge enraged brown bear boss with battle scars, roaring, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "boss_forest_dragon",
+    outPath: "../frontend/public/assets/bosses/forest_dragon/idle.png",
+    body: {
+      description: `a massive ancient forest dragon boss covered in moss and vines, wings spread, ${STYLE}`,
+      image_size: { width: 96, height: 96 },
+      view: "high top-down",
+      direction: "south",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "forest_ground",
+    outPath: "../frontend/public/assets/tiles/battle/forest_ground.png",
+    body: {
+      description: `seamless tileable top-down grass ground texture, forest floor with small plants and pebbles, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      no_background: false,
+      outline: "lineless",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 7.0,
+    },
+  },
 ];
 
 // Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.

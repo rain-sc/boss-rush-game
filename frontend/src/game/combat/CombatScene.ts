@@ -39,7 +39,12 @@ type Enemy = {
 type Projectile = { spr: Sprite; x: number; y: number; vx: number; vy: number; dmg: number; alive: boolean }
 
 export type CombatState = 'playing' | 'cleared' | 'died'
-export type CombatTextures = { player: Texture; enemies: Texture[]; fireball: Texture; boss: Texture }
+export type CombatTextures = {
+  player: Texture
+  enemies: Texture[]
+  fireball: Texture
+  bosses: Record<number, Texture> // keyed by boss level (5/10/15/20)
+}
 
 /**
  * Phase 3 combat: runs one level at a time. The accumulated build modifies the
@@ -243,7 +248,9 @@ export class CombatScene {
 
   private spawnLevel(config: LevelConfig, w: number): void {
     if (config.isBoss) {
-      this.addEnemy(this.tex.boss, w / 2, 44, config.enemyHp, 64, 26, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2)
+      const tex = this.tex.bosses[config.level] ?? this.tex.enemies[0]
+      const size = config.level >= 20 ? 88 : 64
+      this.addEnemy(tex, w / 2, size / 2 + 14, config.enemyHp, size, size * 0.4, ENEMY_SPEED * 0.55, ENEMY_TOUCH_DAMAGE * 2)
       return
     }
     for (let i = 0; i < config.enemyCount; i++) {
