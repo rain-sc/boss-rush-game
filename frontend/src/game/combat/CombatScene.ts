@@ -1,4 +1,4 @@
-import { Container, Sprite, type Texture } from 'pixi.js'
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js'
 import {
   LOGICAL_H,
   PLAYER_SPEED,
@@ -23,7 +23,7 @@ import {
 } from '../config'
 import { getDirection, consumeDodge } from '../input'
 
-type Enemy = { spr: Sprite; x: number; y: number; hp: number; touchCd: number }
+type Enemy = { spr: Sprite; bar: Graphics; x: number; y: number; hp: number; maxHp: number; touchCd: number }
 type Projectile = { spr: Sprite; x: number; y: number; vx: number; vy: number; alive: boolean }
 
 export type CombatState = 'playing' | 'win' | 'lose'
@@ -83,7 +83,10 @@ export class CombatScene {
   }
 
   reset(): void {
-    for (const e of this.enemies) e.spr.destroy()
+    for (const e of this.enemies) {
+      e.spr.destroy()
+      e.bar.destroy()
+    }
     for (const pr of this.projectiles) pr.spr.destroy()
     this.enemies = []
     this.projectiles = []
@@ -191,6 +194,7 @@ export class CombatScene {
       e.x += (dx / m) * ENEMY_SPEED * dt
       e.y += (dy / m) * ENEMY_SPEED * dt
       e.spr.position.set(e.x, e.y)
+      this.drawEnemyBar(e)
       if (m <= ENEMY_RADIUS + ph && e.touchCd <= 0 && this.dodgeTime <= 0) {
         this.playerHp -= ENEMY_TOUCH_DAMAGE
         e.touchCd = ENEMY_TOUCH_INTERVAL
@@ -199,6 +203,7 @@ export class CombatScene {
     this.enemies = this.enemies.filter((e) => {
       if (e.hp <= 0) {
         e.spr.destroy()
+        e.bar.destroy()
         return false
       }
       return true
@@ -235,7 +240,24 @@ export class CombatScene {
       }
       spr.position.set(x, y)
       this.world.addChild(spr)
-      this.enemies.push({ spr, x, y, hp: ENEMY_HP, touchCd: 0 })
+      const bar = new Graphics()
+      this.world.addChild(bar)
+      const e: Enemy = { spr, bar, x, y, hp: ENEMY_HP, maxHp: ENEMY_HP, touchCd: 0 }
+      this.drawEnemyBar(e)
+      this.enemies.push(e)
+    }
+  }
+
+  /** Small HP bar above an enemy; only visible once it has taken damage. */
+  private drawEnemyBar(e: Enemy): void {
+    const bw = 22
+    const bh = 3
+    e.bar.clear()
+    e.bar.position.set(e.x, e.y - ENEMY_SIZE / 2 - 5)
+    if (e.hp < e.maxHp && e.hp > 0) {
+      e.bar.rect(-bw / 2, 0, bw, bh).fill({ color: 0x000000, alpha: 0.6 })
+      const frac = Math.max(0, e.hp / e.maxHp)
+      e.bar.rect(-bw / 2 + 0.5, 0.5, (bw - 1) * frac, bh - 1).fill(0x7ed321)
     }
   }
 
