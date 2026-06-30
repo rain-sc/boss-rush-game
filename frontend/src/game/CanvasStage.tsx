@@ -4,10 +4,9 @@ import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, PLAYER_SIZE } from './config'
 import { initKeyboard, getDirection } from './input'
 
 /**
- * Pixi.js stage that renders the world at a fixed logical resolution
- * (LOGICAL_W x LOGICAL_H) and scales it up by an integer factor with
- * letterboxing + nearest-neighbour sampling for crisp pixel art.
- * Phase 1: a walkable top-down player on a grid field.
+ * Pixi.js stage. Anchored to a fixed logical height (LOGICAL_H) with the width
+ * filling the viewport (no side bars); nearest-neighbour sampling keeps pixels
+ * crisp. Phase 1: a walkable top-down player on a grid field.
  */
 export default function CanvasStage() {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -15,7 +14,7 @@ export default function CanvasStage() {
   useEffect(() => {
     let app: Application | null = null
     let destroyed = false
-    let onResize: (() => void) | null = null
+    let detachLayout: (() => void) | null = null
     const detachKeys = initKeyboard()
 
     ;(async () => {
@@ -32,13 +31,19 @@ export default function CanvasStage() {
       const world = new Container()
       pixi.stage.addChild(world)
 
-      // Play field + grid so movement is clearly visible.
+      const half = PLAYER_SIZE / 2
+      // Play field + grid. Width is dynamic so the scene fills the screen
+      // (anchored to a fixed logical height; no side letterbox bars).
+      const bounds = { w: LOGICAL_W }
       const field = new Graphics()
-      field.rect(0, 0, LOGICAL_W, LOGICAL_H).fill('#2e7d32')
-      for (let x = 0; x <= LOGICAL_W; x += 16) field.moveTo(x, 0).lineTo(x, LOGICAL_H)
-      for (let y = 0; y <= LOGICAL_H; y += 16) field.moveTo(0, y).lineTo(LOGICAL_W, y)
-      field.stroke({ color: 0x000000, alpha: 0.08, width: 1 })
       world.addChild(field)
+      const drawField = (w: number) => {
+        field.clear()
+        field.rect(0, 0, w, LOGICAL_H).fill('#2e7d32')
+        for (let x = 0; x <= w; x += 16) field.moveTo(x, 0).lineTo(x, LOGICAL_H)
+        for (let y = 0; y <= LOGICAL_H; y += 16) field.moveTo(0, y).lineTo(w, y)
+        field.stroke({ color: 0x000000, alpha: 0.08, width: 1 })
+      }
 
       // Player (placeholder idle sprite).
       const texture = await Assets.load('/assets/characters/player/male/idle.png')
@@ -49,28 +54,33 @@ export default function CanvasStage() {
       player.position.set(LOGICAL_W / 2, LOGICAL_H / 2)
       world.addChild(player)
 
-      // Fit-scale + center (letterbox) the world: fill as much of the screen as
-      // possible while keeping the 16:9 aspect and the whole field visible.
-      // (On a 16:9 fullscreen this lands on an exact integer multiple anyway.)
+      // Anchor to the logical height and let the width fill the viewport, so the
+      // scene fills the screen with no side black bars. Pixels stay square.
       const layout = () => {
-        const scale = Math.min(pixi.screen.width / LOGICAL_W, pixi.screen.height / LOGICAL_H)
+        const scale = pixi.screen.height / LOGICAL_H
         world.scale.set(scale)
-        world.position.set(
-          Math.floor((pixi.screen.width - LOGICAL_W * scale) / 2),
-          Math.floor((pixi.screen.height - LOGICAL_H * scale) / 2),
-        )
+        world.position.set(0, 0)
+        bounds.w = Math.ceil(pixi.screen.width / scale)
+        drawField(bounds.w)
+        player.x = Math.min(player.x, bounds.w - half)
       }
       layout()
-      onResize = layout
+      // Re-layout on resize and on orientation change. Orientation needs a
+      // deferred call because innerWidth/Height settle a tick after the event.
+      const onOrient = () => window.setTimeout(layout, 200)
       window.addEventListener('resize', layout)
+      window.addEventListener('orientationchange', onOrient)
+      detachLayout = () => {
+        window.removeEventListener('resize', layout)
+        window.removeEventListener('orientationchange', onOrient)
+      }
 
-      const half = PLAYER_SIZE / 2
       pixi.ticker.add((ticker) => {
         const dt = ticker.deltaMS / 1000
         const dir = getDirection()
         player.x += dir.x * PLAYER_SPEED * dt
         player.y += dir.y * PLAYER_SPEED * dt
-        player.x = Math.max(half, Math.min(LOGICAL_W - half, player.x))
+        player.x = Math.max(half, Math.min(bounds.w - half, player.x))
         player.y = Math.max(half, Math.min(LOGICAL_H - half, player.y))
       })
     })()
@@ -78,7 +88,7 @@ export default function CanvasStage() {
     return () => {
       destroyed = true
       detachKeys()
-      if (onResize) window.removeEventListener('resize', onResize)
+      detachLayout?.()
       app?.destroy(true, { children: true })
     }
   }, [])

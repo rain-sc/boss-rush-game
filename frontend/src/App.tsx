@@ -1,11 +1,13 @@
 import CanvasStage from './game/CanvasStage'
 import TouchJoystick from './components/TouchJoystick'
+import FullscreenButton from './components/FullscreenButton'
 
 function App() {
   return (
     <>
       <CanvasStage />
       <TouchJoystick />
+      <FullscreenButton />
       <div
         style={{
           position: 'fixed',

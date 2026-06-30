@@ -1,5 +1,5 @@
-import { useRef } from 'react'
-import { touch } from '../game/input'
+import { useEffect, useRef } from 'react'
+import { touch, getDirection } from '../game/input'
 
 const RADIUS = 50 // max knob travel in px
 
@@ -49,6 +49,20 @@ export default function TouchJoystick() {
     touch.y = 0
     if (knobRef.current) knobRef.current.style.transform = 'translate(0, 0)'
   }
+
+  // When not dragging, mirror the keyboard (WASD/arrows) direction on the knob.
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      if (pointerId.current === null && knobRef.current) {
+        const d = getDirection()
+        knobRef.current.style.transform = `translate(${d.x * RADIUS}px, ${d.y * RADIUS}px)`
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   return (
     <div
