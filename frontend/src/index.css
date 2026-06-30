@@ -43,6 +43,12 @@ canvas {
   filter: grayscale(0.6) brightness(0.85);
   cursor: not-allowed;
 }
+.ui-card {
+  border: 12px solid transparent;
+  border-image: url('/assets/ui/card_frame.png') 12 fill / 12px stretch;
+  color: #2a1d0c;
+  cursor: pointer;
+}
 
 /* Landscape-designed game: ask touch users to rotate when in portrait. */
 .rotate-notice {

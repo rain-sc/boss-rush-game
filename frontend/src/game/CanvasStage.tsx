@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Application, Assets, Container, Graphics, Text, TilingSprite } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Text, TilingSprite, type Texture } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H, POTION_HEAL } from './config'
 import { initKeyboard, consumePotion } from './input'
 import { CombatScene } from './combat/CombatScene'
-import { emptyBuild, draftThree, type SkillCard } from './build'
+import { starterBuild, draftThree, type DraftCard } from './skills'
 import { getLevelConfig, TOTAL_LEVELS } from './levels'
-import { playerSpritePath } from './player'
+import { playerBasePath } from './player'
+import { loadFrames, WALK_FRAMES, MOVE_FRAMES } from './anims'
 import { playSfx } from './sound'
 import { loadRun, saveRun, getLoadoutStats, getInventory, useItem } from '../api'
 
@@ -16,9 +17,9 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<Phase>('loading')
   const [level, setLevel] = useState(1)
-  const [cards, setCards] = useState<SkillCard[]>([])
+  const [cards, setCards] = useState<DraftCard[]>([])
   const [potions, setPotions] = useState(0)
-  const pickRef = useRef<(c: SkillCard) => void>(() => {})
+  const pickRef = useRef<(c: DraftCard) => void>(() => {})
   const restartRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
 
     const phaseRef = { current: 'loading' as Phase }
     const levelRef = { current: 1 }
-    let buildRef = emptyBuild()
+    let buildRef = starterBuild()
 
     ;(async () => {
       const pixi = new Application()
@@ -45,29 +46,30 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       pixi.stage.addChild(world)
       const bounds = { w: LOGICAL_W }
 
-      const [
-        playerTex,
-        slimeTex,
-        goblinTex,
-        fireballTex,
-        orcTex,
-        gobChiefTex,
-        bearTex,
-        dragonTex,
-        groundTex,
-      ] = await Promise.all([
-        Assets.load(playerSpritePath()),
-        Assets.load('/assets/enemies/slime/idle.png'),
-        Assets.load('/assets/enemies/goblin/idle.png'),
-        Assets.load('/assets/skills/projectiles/fireball.png'),
-        Assets.load('/assets/bosses/orc_warlord/idle.png'),
-        Assets.load('/assets/bosses/goblin_chieftain/idle.png'),
-        Assets.load('/assets/bosses/dire_bear/idle.png'),
-        Assets.load('/assets/bosses/forest_dragon/idle.png'),
-        Assets.load('/assets/tiles/battle/forest_ground.png'),
-      ])
-      for (const t of [playerTex, slimeTex, goblinTex, fireballTex, orcTex, gobChiefTex, bearTex, dragonTex, groundTex])
-        t.source.scaleMode = 'nearest'
+      const [playerWalk, slimeMove, goblinMove, orcMove, gobChiefMove, bearMove, dragonTex, groundTex] =
+        await Promise.all([
+          loadFrames(playerBasePath(), 'walk', WALK_FRAMES),
+          loadFrames('/assets/enemies/slime', 'move', MOVE_FRAMES),
+          loadFrames('/assets/enemies/goblin', 'move', MOVE_FRAMES),
+          loadFrames('/assets/bosses/orc_warlord', 'move', MOVE_FRAMES),
+          loadFrames('/assets/bosses/goblin_chieftain', 'move', MOVE_FRAMES),
+          loadFrames('/assets/bosses/dire_bear', 'move', MOVE_FRAMES),
+          Assets.load('/assets/bosses/forest_dragon/idle.png'), // dragon: static
+          Assets.load('/assets/tiles/battle/forest_ground.png'),
+        ])
+      for (const t of [dragonTex, groundTex]) t.source.scaleMode = 'nearest'
+
+      // Active-skill projectile/effect sprites.
+      const skillProjectiles: Record<string, Texture> = {}
+      await Promise.all(
+        ['fireball', 'ice_shard', 'chain_lightning', 'wind_blade', 'rock_fall', 'poison_cloud', 'spin_slash'].map(
+          async (id) => {
+            const t = await Assets.load(`/assets/skills/projectiles/${id}.png`)
+            t.source.scaleMode = 'nearest'
+            skillProjectiles[id] = t
+          },
+        ),
+      )
 
       // Tiled forest ground fills the (dynamic-width) field.
       const ground = new TilingSprite({ texture: groundTex, width: LOGICAL_W, height: LOGICAL_H })
@@ -114,7 +116,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
           setPhase('won')
           saveCurrent('WON')
         } else {
-          setCards(draftThree())
+          setCards(draftThree(buildRef))
           phaseRef.current = 'draft'
           setPhase('draft')
           saveCurrent('PLAYING')
@@ -127,15 +129,15 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         saveCurrent('LOST')
       }
 
-      const pickCard = (c: SkillCard) => {
+      const pickCard = (c: DraftCard) => {
         playSfx('click')
-        buildRef = { ...buildRef, [c.id]: buildRef[c.id] + 1 }
+        buildRef = { ...buildRef, [c.id]: (buildRef[c.id] ?? 0) + 1 }
         beginLevel(levelRef.current + 1, false)
         saveCurrent('PLAYING')
       }
 
       const restartRun = () => {
-        buildRef = emptyBuild()
+        buildRef = starterBuild()
         beginLevel(1, true)
         saveCurrent('PLAYING')
       }
@@ -146,10 +148,10 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       scene = new CombatScene({
         world,
         textures: {
-          player: playerTex,
-          enemies: [slimeTex, goblinTex],
-          fireball: fireballTex,
-          bosses: { 5: orcTex, 10: gobChiefTex, 15: bearTex, 20: dragonTex },
+          playerWalk,
+          enemies: [slimeMove, goblinMove],
+          skillProjectiles,
+          bosses: { 5: orcMove, 10: gobChiefMove, 15: bearMove, 20: [dragonTex] },
         },
         getW: () => bounds.w,
         onCleared: handleCleared,
@@ -211,13 +213,13 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       const saved = await loadRun()
       if (saved && saved.status === 'PLAYING' && saved.currentLevel >= 1 && saved.currentLevel <= TOTAL_LEVELS) {
         try {
-          buildRef = { ...emptyBuild(), ...JSON.parse(saved.build) }
+          buildRef = { ...starterBuild(), ...JSON.parse(saved.build) }
         } catch {
-          buildRef = emptyBuild()
+          buildRef = starterBuild()
         }
         beginLevel(saved.currentLevel, true)
       } else {
-        buildRef = emptyBuild()
+        buildRef = starterBuild()
         beginLevel(1, true)
       }
     })()
@@ -243,12 +245,15 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
                 <button
                   key={i}
                   onClick={() => pickRef.current(c)}
-                  className="ui-btn"
-                  style={{ width: 150, padding: '14px 12px', textAlign: 'center' }}
+                  className="ui-card"
+                  style={{ width: 150, padding: '10px', textAlign: 'center' }}
                 >
-                  <div style={{ fontSize: 26, marginBottom: 4 }}>{c.icon}</div>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>{c.name}</div>
-                  <div style={{ fontSize: 13, opacity: 0.8 }}>{c.desc}</div>
+                  <img src={c.icon} alt="" width={40} height={40} style={{ imageRendering: 'pixelated', marginBottom: 4 }} />
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: '#2e7d32', marginBottom: 4 }}>
+                    {c.isNew ? '新技能' : `Lv ${c.level - 1}→${c.level}`}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.8 }}>{c.desc}</div>
                 </button>
               ))}
             </div>

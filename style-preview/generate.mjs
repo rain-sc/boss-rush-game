@@ -68,7 +68,7 @@ const allJobs = [
     outPath: "../frontend/public/assets/enemies/slime/idle.png",
     body: {
       description: `a small green slime monster, cute round jelly body, ${STYLE}`,
-      image_size: { width: 48, height: 48 },
+      image_size: { width: 64, height: 64 },
       view: "high top-down",
       direction: "south",
       no_background: true,
@@ -83,7 +83,7 @@ const allJobs = [
     outPath: "../frontend/public/assets/enemies/goblin/idle.png",
     body: {
       description: `a small green goblin warrior holding a wooden club, ${STYLE}`,
-      image_size: { width: 48, height: 48 },
+      image_size: { width: 64, height: 64 },
       view: "high top-down",
       direction: "south",
       no_background: true,
@@ -284,6 +284,113 @@ const allJobs = [
       text_guidance_scale: 8.0,
     },
   },
+
+  // --- Step 4: remaining minor assets ---
+  {
+    name: "home_ground",
+    outPath: "../frontend/public/assets/tiles/home/ground.png",
+    body: {
+      description: `seamless tileable top-down farm ground texture, dirt and short grass with small flowers, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      no_background: false,
+      outline: "lineless",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 7.0,
+    },
+  },
+  {
+    name: "card_frame",
+    outPath: "../frontend/public/assets/ui/card_frame.png",
+    body: {
+      description: `an ornate vertical fantasy skill card frame border with a parchment center, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      no_background: false,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+
+  // --- Phase 7 batch: skill projectile/effect sprites (6) ---
+  ...[
+    ["ice_shard", "a sharp ice shard projectile, light blue crystal"],
+    ["chain_lightning", "a crackling yellow lightning bolt spark"],
+    ["wind_blade", "a green crescent wind blade slash"],
+    ["rock_fall", "a falling brown boulder rock"],
+    ["poison_cloud", "a swirling green poison gas cloud"],
+    ["spin_slash", "a white circular sword slash arc effect"],
+  ].map(([id, desc]) => ({
+    name: `skill_proj_${id}`,
+    outPath: `../frontend/public/assets/skills/projectiles/${id}.png`,
+    body: {
+      description: `${desc}, ${STYLE}`,
+      image_size: { width: 32, height: 32 },
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  })),
+
+  // --- Phase 7 batch: 12 skill card icons (48x48) ---
+  ...[
+    ["fireball", "a fireball"],
+    ["ice_shard", "an ice shard"],
+    ["chain_lightning", "a lightning bolt"],
+    ["wind_blade", "a green wind blade"],
+    ["rock_fall", "a falling boulder"],
+    ["poison_cloud", "a poison gas cloud"],
+    ["spin_slash", "a spinning sword slash"],
+    ["crit_mastery", "a red crosshair target / critical hit mark"],
+    ["lifesteal", "a red blood drop with a small heart"],
+    ["haste", "winged boots"],
+    ["flame_aura", "a burning flame shield aura"],
+    ["fortify", "a sturdy iron shield"],
+  ].map(([id, desc]) => ({
+    name: `skill_icon_${id}`,
+    outPath: `../frontend/public/assets/skills/icons/${id}.png`,
+    body: {
+      description: `a game skill icon of ${desc}, ${STYLE}`,
+      image_size: { width: 48, height: 48 },
+      no_background: true,
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 8.0,
+    },
+  })),
+
+  // --- Animations (animate-with-text): walk / move cycles (1 generation each) ---
+  ...[
+    ["player_male_walk", "characters/player/male", "walk", "walking", 64,
+      "a young male adventurer hero, short brown hair, blue tunic, holding a short sword"],
+    ["player_female_walk", "characters/player/female", "walk", "walking", 64,
+      "a young female warrior girl, long ponytail, blue tunic with a skirt, holding a short sword"],
+    ["enemy_slime_move", "enemies/slime", "move", "hopping", 64, "a small green slime monster, round jelly body"],
+    ["enemy_goblin_move", "enemies/goblin", "move", "walking", 64, "a small green goblin warrior holding a wooden club"],
+    ["boss_orc_move", "bosses/orc_warlord", "move", "walking", 64, "a large armored orc warlord wielding a giant axe"],
+    ["boss_gobchief_move", "bosses/goblin_chieftain", "move", "walking", 64, "a large goblin chieftain with bone armor and a spiked club"],
+    ["boss_bear_move", "bosses/dire_bear", "move", "walking", 64, "a huge enraged brown bear with battle scars"],
+    ["boss_dragon_move", "bosses/forest_dragon", "move", "moving", 64, "a massive ancient forest dragon covered in moss and vines, wings spread"],
+  ].map(([name, dir, anim, action, size, desc]) => ({
+    name,
+    animate: true,
+    reference: `../frontend/public/assets/${dir}/idle.png`,
+    outDir: `../frontend/public/assets/${dir}`,
+    anim,
+    action,
+    nFrames: 4,
+    body: {
+      description: `${desc}, ${STYLE}`,
+      image_size: { width: size, height: size },
+      view: "high top-down",
+      direction: "south",
+    },
+  })),
 ];
 
 // Optional filter: `node generate.mjs name1 name2 ...` runs only those jobs.
@@ -299,6 +406,34 @@ mkdirSync("output", { recursive: true });
 for (const job of jobs) {
   console.log(`Generating ${job.name} ...`);
   try {
+    if (job.animate) {
+      const ref = readFileSync(job.reference).toString("base64");
+      const abody = {
+        ...job.body,
+        action: job.action,
+        n_frames: job.nFrames,
+        reference_image: { type: "base64", base64: ref, format: "png" },
+      };
+      const aresp = await fetch(`${BASE}/animate-with-text`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(abody),
+      });
+      if (!aresp.ok) {
+        console.error(`  ✗ ${job.name} HTTP ${aresp.status}: ${(await aresp.text()).slice(0, 300)}`);
+        process.exitCode = 1;
+        continue;
+      }
+      const adata = await aresp.json();
+      const imgs = adata?.images ?? [];
+      mkdirSync(job.outDir, { recursive: true });
+      imgs.forEach((im, idx) =>
+        writeFileSync(`${job.outDir}/${job.anim}_${idx}.png`, Buffer.from(im.base64, "base64")),
+      );
+      console.log(`  ✓ ${job.name}: ${imgs.length} frames -> ${job.outDir}/${job.anim}_*.png  (usage ${JSON.stringify(adata.usage)})`);
+      continue;
+    }
+
     const body = { ...job.body };
     if (job.initFrom) {
       const b = readFileSync(`output/${job.initFrom}.png`).toString("base64");

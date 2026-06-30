@@ -13,5 +13,10 @@ export function setGender(g: Gender): void {
 
 /** Path to the chosen character's idle sprite (defaults to male). */
 export function playerSpritePath(): string {
-  return `/assets/characters/player/${getGender() ?? 'male'}/idle.png`
+  return `${playerBasePath()}/idle.png`
+}
+
+/** Folder for the chosen character's sprites (idle.png, walk_*.png). */
+export function playerBasePath(): string {
+  return `/assets/characters/player/${getGender() ?? 'male'}`
 }

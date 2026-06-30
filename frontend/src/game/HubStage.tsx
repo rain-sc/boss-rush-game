@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Application, Assets, Container, Sprite, Text, TilingSprite, type Texture } from 'pixi.js'
+import { AnimatedSprite, Application, Assets, Container, Sprite, Text, TilingSprite, type Texture } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, PLAYER_SIZE, PLAYER_HIT_RADIUS } from './config'
 import { initKeyboard, getDirection, consumeInteract } from './input'
-import { playerSpritePath } from './player'
+import { playerBasePath } from './player'
+import { loadFrames, WALK_FRAMES } from './anims'
 
 type Facility = { id: string; label: string; x: number; y: number; tex: string; size: number; gather: boolean }
 
@@ -48,11 +49,11 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
       pixi.stage.addChild(world)
       const bounds = { w: LOGICAL_W }
 
-      const [groundTex, playerTex] = await Promise.all([
+      const [groundTex, playerWalk] = await Promise.all([
         Assets.load('/assets/tiles/battle/forest_ground.png'),
-        Assets.load(playerSpritePath()),
+        loadFrames(playerBasePath(), 'walk', WALK_FRAMES),
       ])
-      for (const t of [groundTex, playerTex]) t.source.scaleMode = 'nearest'
+      groundTex.source.scaleMode = 'nearest'
 
       const ground = new TilingSprite({ texture: groundTex, width: LOGICAL_W, height: LOGICAL_H })
       world.addChild(ground)
@@ -83,9 +84,11 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
         world.addChild(label)
       }
 
-      const player = new Sprite(playerTex)
+      const player = new AnimatedSprite(playerWalk)
       player.anchor.set(0.5)
       player.setSize(PLAYER_SIZE, PLAYER_SIZE)
+      player.animationSpeed = 0.15
+      player.gotoAndStop(0)
       player.position.set(LOGICAL_W / 2, LOGICAL_H / 2)
       world.addChild(player)
 
@@ -115,6 +118,12 @@ export default function HubStage(props: { onAction: (id: string) => void; onNear
         player.y += dir.y * PLAYER_SPEED * dt
         player.x = Math.max(half, Math.min(bounds.w - half, player.x))
         player.y = Math.max(half, Math.min(LOGICAL_H - half, player.y))
+        const moving = dir.x !== 0 || dir.y !== 0
+        if (moving) {
+          if (!player.playing) player.play()
+        } else if (player.playing) {
+          player.gotoAndStop(0)
+        }
 
         // nearest facility in range
         let near: Facility | null = null

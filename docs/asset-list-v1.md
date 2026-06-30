@@ -6,6 +6,27 @@
 
 ---
 
+## 生成進度(截至 Phase 6)
+
+`✅ 已生`　`🟡 部分`　`⬜ 待做(對應系統未實作)`
+
+| 類別 | 狀態 | 說明 |
+|---|---|---|
+| 玩家(男+女) | 🟡 | idle + **walk 動畫**(各)已生並接入;attack/dash/hurt/death 待後續 |
+| 敵人 ×2 | 🟡 | idle + **move 動畫**已生並接入;attack/death 待後續 |
+| Boss ×4 | 🟡 | idle + **move 動畫**(orc/酋長/熊);古龍維持靜態大圖;attack/phase 待後續 |
+| 技能效果 sprite | ✅ | **7/7**(fireball + 冰/雷/風/落石/毒/迴旋),已接入戰鬥 |
+| 技能卡圖示 | ✅ | **12/12**,抽選畫面使用 |
+| 道具圖示 | ✅ | wood/ore/herb/fish/carrot/potion_small 全生 |
+| Tileset | 🟡 | 戰場 forest_ground 已用;家園另生 home/ground 但非無縫,仍用森林草地 |
+| UI | 🟡 | panel/button/**card_frame** 已生(9-slice);hpbar 畫在 canvas |
+| **(清單外,已生)** | ✅ | 家園設施 ×5、工坊、裝備 ×2、選角用 idle |
+
+**已完成**:① sprite 動畫系統(walk/move) ② 完整技能系統(7 主動 + 5 被動 + 12 卡)。
+**剩餘(後續)**:attack/hurt/death 動畫、Boss 招式、無縫家園地磚。
+
+---
+
 ## 共用風格前綴(STYLE)
 
 每個 prompt 實際送出 = `STYLE + 主體描述`。固定前綴確保風格一致:
