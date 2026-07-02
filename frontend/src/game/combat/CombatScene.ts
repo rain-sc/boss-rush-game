@@ -1,4 +1,4 @@
-import { AnimatedSprite, Container, Graphics, Sprite, type Texture } from 'pixi.js'
+import { AnimatedSprite, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js'
 import {
   LOGICAL_H,
   PLAYER_SPEED,
@@ -54,6 +54,8 @@ type Projectile = {
   hit: Set<Enemy>
 }
 type Effect = { spr: Sprite; ttl: number; life: number }
+type Particle = { g: Graphics; x: number; y: number; vx: number; vy: number; ttl: number; life: number }
+type DmgText = { t: Text; x: number; y: number; ttl: number; life: number }
 
 export type CombatState = 'playing' | 'cleared' | 'died'
 export type CombatTextures = {
@@ -84,7 +86,10 @@ export class CombatScene {
   private projectiles: Projectile[] = []
   private enemyShots: EnemyShot[] = []
   private effects: Effect[] = []
+  private particles: Particle[] = []
+  private dmgTexts: DmgText[] = []
   private playerFlash = 0
+  private shake = 0
   private build: SkillBuild = starterBuild()
   private skillCd: Record<string, number> = {}
   private equipAttack = 0
@@ -236,8 +241,17 @@ export class CombatScene {
 
     this.updateProjectiles(dt, w)
     this.updateEffects(dt)
+    this.updateParticles(dt)
+    this.updateDmgTexts(dt)
     this.updateEnemies(dt, ph)
     this.updateEnemyShots(dt, w, ph)
+
+    if (this.shake > 0) {
+      this.shake -= dt
+      this.world.position.set((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5)
+    } else if (this.world.x !== 0 || this.world.y !== 0) {
+      this.world.position.set(0, 0)
+    }
 
     if (this.playerHp <= 0) {
       this.playerHp = 0
@@ -299,11 +313,75 @@ export class CombatScene {
   }
 
   private applyDamage(e: Enemy, dmg: number): void {
-    const d = Math.random() < this.critChance ? dmg * 2 : dmg
+    const crit = Math.random() < this.critChance
+    const d = crit ? dmg * 2 : dmg
     e.hp -= d
     e.flash = 0.08
+    this.spawnDmgText(e.x, e.y - e.size / 2, Math.round(d), crit)
     if (this.lifestealAmt > 0) this.playerHp = Math.min(this.playerMaxHp, this.playerHp + this.lifestealAmt)
     playSfx('hit')
+  }
+
+  private spawnDmgText(x: number, y: number, amount: number, crit: boolean): void {
+    const t = new Text({
+      text: crit ? `${amount}!` : `${amount}`,
+      style: {
+        fill: crit ? 0xffd23f : 0xffffff,
+        fontSize: crit ? 15 : 11,
+        fontFamily: 'Zpix, sans-serif',
+        stroke: { color: 0x000000, width: 3 },
+      },
+    })
+    t.anchor.set(0.5)
+    t.position.set(x, y)
+    this.world.addChild(t)
+    this.dmgTexts.push({ t, x, y, ttl: 0.6, life: 0.6 })
+  }
+
+  private spawnPoof(x: number, y: number, big: boolean): void {
+    const n = big ? 14 : 6
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2
+      const sp = 30 + Math.random() * 50
+      const g = new Graphics()
+      g.circle(0, 0, big ? 3 : 2).fill('#ffffff')
+      g.position.set(x, y)
+      this.world.addChild(g)
+      this.particles.push({ g, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, ttl: 0.35, life: 0.35 })
+    }
+  }
+
+  private updateParticles(dt: number): void {
+    for (const p of this.particles) {
+      p.x += p.vx * dt
+      p.y += p.vy * dt
+      p.ttl -= dt
+      p.g.position.set(p.x, p.y)
+      p.g.alpha = Math.max(0, p.ttl / p.life)
+    }
+    this.particles = this.particles.filter((p) => {
+      if (p.ttl <= 0) {
+        p.g.destroy()
+        return false
+      }
+      return true
+    })
+  }
+
+  private updateDmgTexts(dt: number): void {
+    for (const d of this.dmgTexts) {
+      d.y -= 20 * dt
+      d.ttl -= dt
+      d.t.position.set(d.x, d.y)
+      d.t.alpha = Math.max(0, d.ttl / d.life)
+    }
+    this.dmgTexts = this.dmgTexts.filter((d) => {
+      if (d.ttl <= 0) {
+        d.t.destroy()
+        return false
+      }
+      return true
+    })
   }
 
   private fireEnemyShot(e: Enemy): void {
@@ -361,6 +439,7 @@ export class CombatScene {
         if (this.dodgeTime <= 0) {
           this.playerHp -= s.dmg
           this.playerFlash = 0.12
+          this.shake = 0.12
           playSfx('hurt')
         }
       }
@@ -464,11 +543,15 @@ export class CombatScene {
       if (m <= e.radius + ph && e.touchCd <= 0 && this.dodgeTime <= 0) {
         this.playerHp -= e.touchDmg
         e.touchCd = ENEMY_TOUCH_INTERVAL
+        this.playerFlash = 0.12
+        this.shake = 0.12
         playSfx('hurt')
       }
     }
     this.enemies = this.enemies.filter((e) => {
       if (e.hp <= 0) {
+        this.spawnPoof(e.x, e.y, e.isBoss)
+        if (e.isBoss) this.shake = 0.3
         e.spr.destroy()
         e.bar.destroy()
         return false
@@ -485,12 +568,18 @@ export class CombatScene {
     for (const pr of this.projectiles) pr.spr.destroy()
     for (const s of this.enemyShots) s.g.destroy()
     for (const fx of this.effects) fx.spr.destroy()
+    for (const p of this.particles) p.g.destroy()
+    for (const d of this.dmgTexts) d.t.destroy()
     this.enemies = []
     this.projectiles = []
     this.enemyShots = []
     this.effects = []
+    this.particles = []
+    this.dmgTexts = []
     this.playerFlash = 0
+    this.shake = 0
     this.player.tint = 0xffffff
+    this.world.position.set(0, 0)
   }
 
   private spawnLevel(config: LevelConfig, w: number): void {

@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Application, Assets, Container, Graphics, Text, TilingSprite, type Texture } from 'pixi.js'
+import { Application, Assets, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js'
 import { LOGICAL_W, LOGICAL_H, POTION_HEAL } from './config'
 import { initKeyboard, consumePotion } from './input'
 import { CombatScene } from './combat/CombatScene'
 import { starterBuild, draftThree, type DraftCard } from './skills'
 import { getLevelConfig, TOTAL_LEVELS } from './levels'
+import { getMap } from './maps'
 import { playerBasePath } from './player'
 import { loadFrames, WALK_FRAMES, MOVE_FRAMES } from './anims'
 import { playSfx } from './sound'
 import { loadRun, saveRun, getLoadoutStats, getInventory, useItem } from '../api'
 
 type Phase = 'loading' | 'combat' | 'draft' | 'won' | 'lost'
-const MAP_ID = 1
-
-export default function CanvasStage({ onExit }: { onExit?: () => void }) {
+export default function CanvasStage({ onExit, mapId = 1 }: { onExit?: () => void; mapId?: number }) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [phase, setPhase] = useState<Phase>('loading')
   const [level, setLevel] = useState(1)
@@ -46,7 +45,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       pixi.stage.addChild(world)
       const bounds = { w: LOGICAL_W }
 
-      const [playerWalk, slimeMove, goblinMove, orcMove, gobChiefMove, bearMove, dragonTex, groundTex] =
+      const [playerWalk, slimeMove, goblinMove, orcMove, gobChiefMove, bearMove, dragonTex] =
         await Promise.all([
           loadFrames(playerBasePath(), 'walk', WALK_FRAMES),
           loadFrames('/assets/enemies/slime', 'move', MOVE_FRAMES),
@@ -55,9 +54,17 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
           loadFrames('/assets/bosses/goblin_chieftain', 'move', MOVE_FRAMES),
           loadFrames('/assets/bosses/dire_bear', 'move', MOVE_FRAMES),
           Assets.load('/assets/bosses/forest_dragon/idle.png'), // dragon: static
-          Assets.load('/assets/tiles/battle/forest_ground.png'),
         ])
-      for (const t of [dragonTex, groundTex]) t.source.scaleMode = 'nearest'
+      dragonTex.source.scaleMode = 'nearest'
+
+      // Battle ground: full illustrated image stretched to fill (fallback if missing).
+      let groundTex
+      try {
+        groundTex = await Assets.load(getMap(mapId).ground)
+      } catch {
+        groundTex = await Assets.load('/assets/tiles/battle/forest_ground.png')
+      }
+      groundTex.source.scaleMode = 'nearest'
 
       // Active-skill projectile/effect sprites.
       const skillProjectiles: Record<string, Texture> = {}
@@ -71,8 +78,11 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
         ),
       )
 
-      // Tiled forest ground fills the (dynamic-width) field.
-      const ground = new TilingSprite({ texture: groundTex, width: LOGICAL_W, height: LOGICAL_H })
+      // Battle ground: full image stretched to fill the (dynamic-width) field.
+      const ground = new Sprite(groundTex)
+      ground.position.set(0, 0)
+      ground.width = LOGICAL_W
+      ground.height = LOGICAL_H
       world.addChild(ground)
 
       const layout = () => {
@@ -95,7 +105,7 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
 
       const saveCurrent = (status: string) =>
         saveRun({
-          mapId: MAP_ID,
+          mapId,
           currentLevel: levelRef.current,
           hp: Math.ceil(scene.playerHp),
           status,
@@ -105,7 +115,9 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
       const beginLevel = (lvl: number, fullHeal: boolean) => {
         levelRef.current = lvl
         setLevel(lvl)
-        scene.startLevel(getLevelConfig(lvl), buildRef, fullHeal)
+        const cfg = getLevelConfig(lvl)
+        cfg.enemyHp = Math.round(cfg.enemyHp * getMap(mapId).difficulty)
+        scene.startLevel(cfg, buildRef, fullHeal)
         phaseRef.current = 'combat'
         setPhase('combat')
       }
@@ -230,7 +242,13 @@ export default function CanvasStage({ onExit }: { onExit?: () => void }) {
 
       // resume saved run or start fresh
       const saved = await loadRun()
-      if (saved && saved.status === 'PLAYING' && saved.currentLevel >= 1 && saved.currentLevel <= TOTAL_LEVELS) {
+      if (
+        saved &&
+        saved.status === 'PLAYING' &&
+        saved.mapId === mapId &&
+        saved.currentLevel >= 1 &&
+        saved.currentLevel <= TOTAL_LEVELS
+      ) {
         try {
           buildRef = { ...starterBuild(), ...JSON.parse(saved.build) }
         } catch {

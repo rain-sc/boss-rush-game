@@ -285,6 +285,157 @@ const allJobs = [
     },
   },
 
+  // --- Map 2: cave battle tileset ---
+  {
+    name: "cave_ground",
+    outPath: "../frontend/public/assets/tiles/battle/cave.png",
+    body: {
+      description: `seamless tileable top-down dark cave stone floor with cracks, pebbles and moss, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      no_background: false,
+      outline: "lineless",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 7.0,
+    },
+  },
+
+  // --- Hub cohesion pass: style-locked to house.png (Stardew-ish farm) ---
+  ...[
+    ['bf_tree', 'hub/tree.png', 'a single lush round tree with soft green foliage and a brown trunk', 96, 96, true],
+    ['bf_rock', 'hub/rock.png', 'a mossy grey boulder with a glowing blue ore crystal', 96, 96, true],
+    ['bf_pond', 'hub/pond.png', 'a small round pond of blue water with a stone and grass rim', 96, 96, true],
+    ['bf_farm', 'hub/farm_plot.png', 'a small square fenced garden plot of tilled brown soil with green sprouts', 96, 96, true],
+    ['bf_portal', 'hub/portal.png', 'a glowing blue magic portal with an ornate stone arch', 96, 96, true],
+  ].map(([name, path, desc, w, h, noBg]) => ({
+    name,
+    bitforge: true,
+    styleFrom: '../frontend/public/assets/hub/house.png',
+    styleStrength: 55,
+    outPath: `../frontend/public/assets/${path}`,
+    body: {
+      description: `${desc}, warm bright cozy farm game, ${STYLE}`,
+      image_size: { width: w, height: h },
+      view: 'high top-down',
+      no_background: noBg,
+      outline: 'single color black outline',
+      shading: 'basic shading',
+      detail: 'medium detail',
+      text_guidance_scale: 7.0,
+    },
+  })),
+
+  // --- Hub redesign: higher detail, larger facilities + grass tile ---
+  ...[
+    ["hub_tree2", "hub/tree.png", "a large lush oak tree with rich detailed green foliage and a thick gnarled brown trunk", 96],
+    ["hub_rock2", "hub/rock.png", "a detailed rocky boulder mining node with glowing blue ore crystals embedded in grey stone", 80],
+    ["hub_pond2", "hub/pond.png", "a detailed round pond of clear blue water surrounded by smooth rocks and green reeds", 96],
+    ["hub_farm2", "hub/farm_plot.png", "a neat farm plot of tilled brown soil rows with small green crop sprouts and a wooden fence", 80],
+    ["hub_house2", "hub/house.png", "a cozy detailed cottage workshop with a thatched roof, stone chimney, wooden door and windows", 96],
+    ["hub_portal2", "hub/portal.png", "a glowing magical portal with an ornate carved stone arch and swirling blue energy", 80],
+  ].map(([name, path, desc, size]) => ({
+    name,
+    outPath: `../frontend/public/assets/${path}`,
+    body: {
+      description: `${desc}, ${STYLE}`,
+      image_size: { width: size, height: size },
+      view: "high top-down",
+      no_background: true,
+      outline: "single color black outline",
+      shading: "detailed shading",
+      detail: "highly detailed",
+      text_guidance_scale: 8.0,
+    },
+  })),
+  {
+    name: "hub_scene",
+    outPath: "../frontend/public/assets/tiles/home/scene.png",
+    body: {
+      description: `top-down grassy farm yard ground, clean soft green lawn with one faint light dirt path and a few small flowers, open and tidy, not cluttered, no buildings, no water, warm bright cozy farm game, ${STYLE}`,
+      image_size: { width: 240, height: 135 },
+      view: "high top-down",
+      no_background: false,
+      outline: "lineless",
+      shading: "basic shading",
+      detail: "medium detail",
+      text_guidance_scale: 7.0,
+    },
+  },
+  {
+    name: "hub_farm3",
+    outPath: "../frontend/public/assets/hub/farm_plot.png",
+    body: {
+      description: `a single small square garden plot, a patch of brown tilled soil with a low wooden fence around it and two green sprouts, one object centered, ${STYLE}`,
+      image_size: { width: 80, height: 80 },
+      view: "high top-down",
+      no_background: true,
+      negative_description: "grid, many tiles, repeated pattern, multiple plots",
+      outline: "single color black outline",
+      shading: "basic shading",
+      detail: "medium detail",
+      text_guidance_scale: 8.0,
+    },
+  },
+  {
+    name: "hub_grass",
+    outPath: "../frontend/public/assets/tiles/home/grass.png",
+    body: {
+      description: `a seamless repeating top-down grass lawn texture, even short green grass with subtle blades, fully tileable, no border, no central object, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: "high top-down",
+      no_background: false,
+      outline: "lineless",
+      shading: "basic shading",
+      detail: "low detail",
+      text_guidance_scale: 7.0,
+    },
+  },
+
+  // --- Animated hub facilities: idle bases (64) ---
+  ...[
+    ['tree', 'a lush green leafy tree'],
+    ['rock', 'a grey boulder with glowing blue ore crystals'],
+    ['pond', 'a small round pond of blue water with a stone rim'],
+    ['farm', 'a small fenced garden plot with tilled soil and green sprouts'],
+    ['house', 'a cozy log cabin workshop with a stone chimney'],
+    ['portal', 'a glowing blue magic portal with an ornate stone arch'],
+  ].map(([id, desc]) => ({
+    name: `fac_${id}_idle`,
+    outPath: `../frontend/public/assets/hub/${id}/idle.png`,
+    body: {
+      description: `${desc}, warm bright cozy farm game, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: 'high top-down',
+      no_background: true,
+      outline: 'single color black outline',
+      shading: 'basic shading',
+      detail: 'medium detail',
+      text_guidance_scale: 8.0,
+    },
+  })),
+
+  // --- Animated hub facilities: animations (animate-with-text, ref = idle) ---
+  ...[
+    ['tree', 'sway', 'a lush green leafy tree', 'the leaves swaying gently in the wind'],
+    ['pond', 'ripple', 'a small round pond of blue water', 'the water rippling gently'],
+    ['portal', 'swirl', 'a glowing blue magic portal', 'the magic energy swirling and glowing'],
+    ['house', 'smoke', 'a cozy log cabin workshop with a chimney', 'smoke gently rising from the chimney'],
+  ].map(([id, anim, desc, action]) => ({
+    name: `fac_${id}_${anim}`,
+    animate: true,
+    reference: `../frontend/public/assets/hub/${id}/idle.png`,
+    outDir: `../frontend/public/assets/hub/${id}`,
+    anim,
+    action,
+    nFrames: 4,
+    body: {
+      description: `${desc}, ${STYLE}`,
+      image_size: { width: 64, height: 64 },
+      view: 'high top-down',
+    },
+  })),
+
   // --- Step 4: remaining minor assets ---
   {
     name: "home_ground",
@@ -431,6 +582,36 @@ for (const job of jobs) {
         writeFileSync(`${job.outDir}/${job.anim}_${idx}.png`, Buffer.from(im.base64, "base64")),
       );
       console.log(`  ✓ ${job.name}: ${imgs.length} frames -> ${job.outDir}/${job.anim}_*.png  (usage ${JSON.stringify(adata.usage)})`);
+      continue;
+    }
+
+    if (job.bitforge) {
+      const style = readFileSync(job.styleFrom).toString("base64");
+      const bbody = {
+        ...job.body,
+        style_image: { type: "base64", base64: style, format: "png" },
+        style_strength: job.styleStrength ?? 50,
+      };
+      const bresp = await fetch(`${BASE}/generate-image-bitforge`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify(bbody),
+      });
+      if (!bresp.ok) {
+        console.error(`  ✗ ${job.name} HTTP ${bresp.status}: ${(await bresp.text()).slice(0, 300)}`);
+        process.exitCode = 1;
+        continue;
+      }
+      const bdata = await bresp.json();
+      const bb64 = bdata?.image?.base64;
+      if (!bb64) {
+        console.error(`  ✗ ${job.name}: no image`);
+        process.exitCode = 1;
+        continue;
+      }
+      mkdirSync(dirname(job.outPath), { recursive: true });
+      writeFileSync(job.outPath, Buffer.from(bb64, "base64"));
+      console.log(`  ✓ ${job.name} (bitforge) -> ${job.outPath}  (usage ${JSON.stringify(bdata.usage)})`);
       continue;
     }
 

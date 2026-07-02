@@ -52,6 +52,7 @@
 | [architecture.md](architecture.md) | 前後端架構、資料庫表設計 |
 | [assets.md](assets.md) | 美術素材規格、命名、資料夾、PixelLab 生成流程 |
 | [asset-list-v1.md](asset-list-v1.md) | 第一版素材生成清單(路徑 + 尺寸 + prompt) |
+| [asset-spec.md](asset-spec.md) | 素材規格書(drop-in:路徑/尺寸/格式,給外部美術) |
 | [ui.md](ui.md) | 前端 UI:畫面地圖、各畫面版面、響應式、元件 |
 
 ---

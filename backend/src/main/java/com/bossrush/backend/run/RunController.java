@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.bossrush.backend.progress.PlayerProgress;
+import com.bossrush.backend.progress.PlayerProgressRepository;
+
 import java.time.Instant;
 
 /** Phase 3 run-progress persistence. No auth yet; defaults to player 1. */
@@ -15,9 +18,11 @@ import java.time.Instant;
 public class RunController {
 
     private final RunProgressRepository repo;
+    private final PlayerProgressRepository progressRepo;
 
-    public RunController(RunProgressRepository repo) {
+    public RunController(RunProgressRepository repo, PlayerProgressRepository progressRepo) {
         this.repo = repo;
+        this.progressRepo = progressRepo;
     }
 
     /** Current run for the player, or null if none. */
@@ -38,6 +43,20 @@ public class RunController {
         r.setStatus(req.status());
         r.setBuild(req.build());
         r.setUpdatedAt(Instant.now());
+
+        // Clearing a map's final boss unlocks the next map.
+        if ("WON".equals(req.status()) && req.mapId() != null) {
+            PlayerProgress p = progressRepo.findByPlayerId(playerId).orElseGet(() -> {
+                PlayerProgress np = new PlayerProgress();
+                np.setPlayerId(playerId);
+                np.setHighestClearedMap(0);
+                return np;
+            });
+            if (req.mapId() > p.getHighestClearedMap()) {
+                p.setHighestClearedMap(req.mapId());
+                progressRepo.save(p);
+            }
+        }
         return repo.save(r);
     }
 

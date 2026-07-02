@@ -10,10 +10,11 @@ import InventoryPanel from './components/InventoryPanel'
 import FarmPanel from './components/FarmPanel'
 import HousePanel from './components/HousePanel'
 import CharacterSelect from './components/CharacterSelect'
+import MapSelect from './components/MapSelect'
 import { getGender, type Gender } from './game/player'
-import { getInventory, addItem, type InvItem } from './api'
+import { getInventory, addItem, getProgress, type InvItem } from './api'
 
-type Screen = 'hub' | 'run'
+type Screen = 'hub' | 'mapselect' | 'run'
 
 const GATHER_LABEL: Record<string, string> = {
   tree: '木材',
@@ -30,10 +31,14 @@ function App() {
   const [showHouse, setShowHouse] = useState(false)
   const [inv, setInv] = useState<InvItem[]>([])
   const [gender, setGenderState] = useState<Gender | null>(getGender())
+  const [highestCleared, setHighestCleared] = useState(0)
+  const [mapId, setMapId] = useState(1)
 
   const refreshInv = () => getInventory().then(setInv)
+  const refreshProgress = () => getProgress().then(setHighestCleared)
   useEffect(() => {
     refreshInv()
+    refreshProgress()
   }, [])
 
   if (!gender) {
@@ -47,7 +52,7 @@ function App() {
 
   const handleHubAction = async (id: string) => {
     if (id === 'portal') {
-      setScreen('run')
+      setScreen('mapselect')
       return
     }
     if (id === 'farm') {
@@ -68,14 +73,25 @@ function App() {
 
   return (
     <>
-      {screen === 'hub' ? (
-        <HubStage onAction={handleHubAction} onNear={setNear} />
-      ) : (
+      {screen === 'hub' && <HubStage onAction={handleHubAction} onNear={setNear} />}
+      {screen === 'run' && (
         <CanvasStage
+          mapId={mapId}
           onExit={() => {
             setScreen('hub')
             refreshInv()
+            refreshProgress()
           }}
+        />
+      )}
+      {screen === 'mapselect' && (
+        <MapSelect
+          highestCleared={highestCleared}
+          onSelect={(id) => {
+            setMapId(id)
+            setScreen('run')
+          }}
+          onClose={() => setScreen('hub')}
         />
       )}
 

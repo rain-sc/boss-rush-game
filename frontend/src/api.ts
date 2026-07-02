@@ -153,6 +153,17 @@ export async function getLoadoutStats(): Promise<LoadoutStats> {
   }
 }
 
+export async function getProgress(): Promise<number> {
+  try {
+    const r = await fetch('/api/progress')
+    if (!r.ok) return 0
+    const d = await r.json()
+    return d.highestClearedMap ?? 0
+  } catch {
+    return 0
+  }
+}
+
 export async function useItem(itemId: string): Promise<{ ok: boolean }> {
   try {
     const r = await postJson('/api/inventory/use', { itemId })
